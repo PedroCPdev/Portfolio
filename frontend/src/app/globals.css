@@ -1,15 +1,13 @@
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
-@tailwind utilities;
+@import "tailwindcss";
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@theme {
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
 }
 
-body {
-  background: #050d1a;
-  color: #e8f0fe;
-  font-family: var(--font-outfit), sans-serif;
+@layer base {
+  body {
+    @apply bg-[#050d1a] text-[#e8f0fe] m-0 p-0;
+    @apply px-4 sm:px-6 lg:px-8 xl:px-12;
+  }
 }

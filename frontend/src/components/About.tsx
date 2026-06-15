@@ -1,47 +1,62 @@
 import SectionHeader from "./SectionHeader";
+import { 
+  SiDotnet, 
+  SiSharp, 
+  SiPostgresql, 
+  SiReact, 
+  SiDocker, 
+  SiAngular, 
+  SiGit 
+} from "react-icons/si";
 
-const tags = ["C#", ".NET", "Oracle", "EF Core", "AngularJS", "PostgreSQL"];
+import { IconType } from "react-icons";
+
+const tagIcons: Record<string, IconType> = {
+  "C#": SiSharp,
+  ".NET": SiDotnet,
+  "AngularJS": SiAngular,
+  "PostgreSQL": SiPostgresql,
+  "Git": SiGit,
+  "Docker": SiDocker,
+  "React": SiReact,
+};
+
+const tags = ["C#", ".NET", "Oracle", "EF Core", "AngularJS", "PostgreSQL", "Git", "Docker", "Azure", "Agile", "Scrum", "TDD", "Clean Code", "DDD", "Microservices", "CI/CD", "Unit Testing", "Integration Testing", "Performance Optimization"];
 
 export default function About() {
   return (
-    <section id="about" style={{
-      padding: "56px 40px",
-      borderTop: "0.5px solid rgba(91,160,245,0.08)",
-    }}>
+    <section id="about" className="py-20 px-12 border-t-[0.5px] border-[#5ba0f5]/8 w-full">
       <SectionHeader number="01" title="About me" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-        <div style={{
-          background: "#0d1b2e", border: "0.5px solid rgba(91,160,245,0.1)",
-          borderRadius: "10px", padding: "20px 22px",
-        }}>
-          <p style={{ fontSize: "11px", color: "rgba(232,240,254,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
-            ocupação atual
+      <div className="grid grid-cols-2 gap-8 w-full">
+        <div className="bg-[#0d1b2e] border-[0.5px] border-[#5ba0f5]/10 rounded-[10px] py-6 px-6 flex flex-col gap-3.5">
+          <p className="text-[11px] text-[#e8f0fe]/30 uppercase tracking-[0.08em] mb-2.5">
+            Current main role
           </p>
-          <p style={{ fontSize: "14px", color: "#c8d8f0", lineHeight: 1.6 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", color: "#5ba0f5" }}>.NET</span> Software Developer
+          <p className="text-sm text-[#c8d8f0] leading-relaxed m-0">
+            <span className="font-mono text-[13px] text-[#5ba0f5]">.NET</span> Software Developer
             <br />
-            <span style={{ fontSize: "12px", color: "rgba(232,240,254,0.28)" }}>
-              manutenção e desenvolvimento de aplicações .NET, Oracle e AngularJS
+            <span className="text-xs text-[#e8f0fe]/[0.28]">
+              maintenance and development of .NET, Oracle and AngularJS applications
             </span>
           </p>
         </div>
-        <div style={{
-          background: "#0d1b2e", border: "0.5px solid rgba(91,160,245,0.1)",
-          borderRadius: "10px", padding: "20px 22px",
-        }}>
-          <p style={{ fontSize: "11px", color: "rgba(232,240,254,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
-            stack principal
+        <div className="bg-[#0d1b2e] border-[0.5px] border-[#5ba0f5]/10 rounded-[10px] py-6 px-6 flex flex-col gap-3.5">
+          <p className="text-[11px] text-[#e8f0fe]/30 uppercase tracking-[0.08em] mb-2.5">
+            Main technologies
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
-            {tags.map(tag => (
-              <span key={tag} style={{
-                fontFamily: "var(--font-mono)", fontSize: "10px", padding: "3px 8px",
-                borderRadius: "4px", background: "rgba(91,160,245,0.08)",
-                color: "#5ba0f5", border: "0.5px solid rgba(91,160,245,0.18)",
-              }}>
-                {tag}
-              </span>
-            ))}
+          <div className="flex flex-wrap gap-2.5 mt-1.5">
+            {tags.map((tag) => {
+              const Icon = tagIcons[tag];
+              return (
+                <span
+                  key={tag}
+                  className="font-mono text-[10px] py-0.75 px-2 rounded bg-[#5ba0f5]/8 text-[#5ba0f5] border-[0.5px] border-[#5ba0f5]/18 inline-flex items-center gap-1"
+                >
+                  {Icon && <Icon size={10} />}
+                  {tag}
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>
