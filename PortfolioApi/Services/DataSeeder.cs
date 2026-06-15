@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Portfolio.Data;
 using Portfolio.Models;
 
@@ -7,7 +8,7 @@ public static class DataSeeder
 {
     public static async Task SeedAsync(AppDbContext db)
     {
-        if (db.Projects.Any()) return;
+        if (await db.Projects.AnyAsync()) return;
 
         db.Projects.AddRange(
             new Project

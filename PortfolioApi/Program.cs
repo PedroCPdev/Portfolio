@@ -31,8 +31,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();   // aplica migrations automaticamente
-    await DataSeeder.SeedAsync(db);     // insere dados iniciais se estiver vazio
+    await db.Database.MigrateAsync(); 
+    await DataSeeder.SeedAsync(db); 
 }
 
 // ─── FASE 3: Pipeline + Endpoints ────────────
@@ -42,11 +42,12 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+app.UseHttpsRedirection();
 app.UseCors("Frontend");
+
 
 app.MapContactEndpoints();
 app.MapProjectsEndpoints();
 
-app.UseHttpsRedirection();
 
 app.Run();
