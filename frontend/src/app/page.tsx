@@ -6,24 +6,17 @@ import Contact from "@/components/Contact";
 
 export default function Home() {
   return (
-    <>
+    <div className="max-w-5xl mx-auto w-full flex flex-col min-h-screen">
       <Navbar />
-      <main>
+      <main className="flex-1">
         <Hero />
         <About />
         <Projects />
         <Contact />
       </main>
-      <footer style={{
-        padding: "20px 40px",
-        borderTop: "0.5px solid rgba(91,160,245,0.08)",
-        textAlign: "center",
-        fontSize: "11px",
-        color: "rgba(232,240,254,0.15)",
-        fontFamily: "var(--font-mono)",
-      }}>
-        pedro chasci puga © 2026 — built with next.js + c#
+      <footer className="py-8 px-10 border-t-[0.5px] border-[#5ba0f5]/8 text-center text-[11px] text-[#e8f0fe]/15 font-mono">
+        Pedro Chasci Puga © 2026 — built with next.js + c#
       </footer>
-    </>
+    </div>
   );
 }
