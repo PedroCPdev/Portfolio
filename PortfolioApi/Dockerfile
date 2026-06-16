@@ -12,3 +12,8 @@ RUN apt-get update && apt-get install -y netbase && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:8080
 ENTRYPOINT ["dotnet", "PortfolioApi.dll"]
+
+# Adiciona o suporte a rede necessário para o Npgsql não crashar ao tentar resolver DNS
+RUN apt-get update && apt-get install -y netbase iproute2 && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/publish .
+# ...
