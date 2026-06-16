@@ -22,11 +22,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), 
-        npgsqlOptions => {
-            npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
-            npgsqlOptions.CommandTimeout(60); 
-        }));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions => npgsqlOptions.CommandTimeout(30)
+    ));
 
 var app = builder.Build();
 
