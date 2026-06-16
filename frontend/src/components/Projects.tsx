@@ -60,7 +60,7 @@ export default async function Projects() {
       <SectionHeader number="02" title="Projects" />
       {projects.length === 0 ? (
         <p className="text-[13px] text-[#e8f0fe]/25 font-mono m-0 ml-1">
-          // nenhum projeto encontrado — verifique se a API está rodando
+          // no projects yet, but stay tuned! I&apos;m working on some exciting projects that will be showcased here soon.
         </p>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-8 w-full">
