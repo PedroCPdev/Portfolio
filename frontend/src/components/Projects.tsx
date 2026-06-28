@@ -6,7 +6,7 @@ import { FiExternalLink } from "react-icons/fi";
 
 function ProjectCard({ project }: { project: Project }) {
   return (
-    <div className="bg-[#0d1b2e] border-[0.5px] border-[#5ba0f5]/10 rounded-[10px] py-7 px-8 flex flex-col gap-5">
+    <div className="bg-[#0d1b2e] border-[0.5px] border-[#5ba0f5]/10 rounded-[10px] py-7 px-6 sm:px-8 flex flex-col gap-5">
       <div>
         <h3 className="text-sm font-medium text-[#e8f0fe] m-0 mb-1.5">
           {project.title}
@@ -56,14 +56,14 @@ function ProjectCard({ project }: { project: Project }) {
 export default async function Projects() {
   const projects = await getProjects();
   return (
-    <section id="projects" className="py-20 px-12 border-t-[0.5px] border-[#5ba0f5]/8 w-full">
+    <section id="projects" className="py-12 md:py-20 px-4 sm:px-8 md:px-12 border-t-[0.5px] border-[#5ba0f5]/8 w-full">
       <SectionHeader number="02" title="Projects" />
       {projects.length === 0 ? (
         <p className="text-[13px] text-[#e8f0fe]/25 font-mono m-0 ml-1">
           // no projects yet, but stay tuned! I&apos;m working on some exciting projects that will be showcased here soon.
         </p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-8 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 w-full">
           {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

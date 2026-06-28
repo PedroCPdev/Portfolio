@@ -1,14 +1,5 @@
 import SectionHeader from "./SectionHeader";
-import { 
-  SiDotnet, 
-  SiSharp, 
-  SiPostgresql, 
-  SiReact, 
-  SiDocker, 
-  SiAngular, 
-  SiGit 
-} from "react-icons/si";
-
+import { SiDotnet, SiSharp, SiPostgresql, SiReact, SiDocker, SiAngular, SiGit } from "react-icons/si";
 import { IconType } from "react-icons";
 
 const tagIcons: Record<string, IconType> = {
@@ -25,9 +16,9 @@ const tags = ["C#", ".NET", "Oracle", "EF Core", "AngularJS", "PostgreSQL", "Git
 
 export default function About() {
   return (
-    <section id="about" className="py-20 px-12 border-t-[0.5px] border-[#5ba0f5]/8 w-full">
+    <section id="about" className="py-12 md:py-20 px-4 sm:px-8 md:px-12 border-t-[0.5px] border-[#5ba0f5]/8 w-full">
       <SectionHeader number="01" title="About me" />
-      <div className="grid grid-cols-2 gap-8 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 w-full">
         <div className="bg-[#0d1b2e] border-[0.5px] border-[#5ba0f5]/10 rounded-[10px] py-6 px-6 flex flex-col gap-3.5">
           <p className="text-[11px] text-[#e8f0fe]/30 uppercase tracking-[0.08em] mb-2.5">
             Current main role
