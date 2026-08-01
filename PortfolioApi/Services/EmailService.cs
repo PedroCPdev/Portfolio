@@ -1,5 +1,5 @@
-using System.Net;
-using System.Net.Mail;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
 using Portfolio.Models;
 
@@ -7,20 +7,17 @@ namespace Portfolio.Services;
 
 public class EmailOptions
 {
-    public string Host { get; set; } = string.Empty;
-    public int Port { get; set; } = 587;
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+    public string FromAddress { get; set; } = "onboarding@resend.dev";
     public string ToAddress { get; set; } = string.Empty;
 }
 
-public class EmailService(IOptions<EmailOptions> options, ILogger<EmailService> logger)
+public class EmailService(IOptions<EmailOptions> options, IHttpClientFactory httpClientFactory, ILogger<EmailService> logger)
 {
     private readonly EmailOptions _options = options.Value;
 
     public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(_options.Host) &&
-        !string.IsNullOrWhiteSpace(_options.Username) &&
+        !string.IsNullOrWhiteSpace(_options.ApiKey) &&
         !string.IsNullOrWhiteSpace(_options.ToAddress);
 
     public async Task SendContactMessageAsync(ContactMessage message)
@@ -33,21 +30,23 @@ public class EmailService(IOptions<EmailOptions> options, ILogger<EmailService> 
             return;
         }
 
-        using var client = new SmtpClient(_options.Host, _options.Port)
-        {
-            Credentials = new NetworkCredential(_options.Username, _options.Password),
-            EnableSsl = true,
-        };
+        var client = httpClientFactory.CreateClient();
+        client.BaseAddress = new Uri("https://api.resend.com/");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
 
-        using var mail = new MailMessage
+        var response = await client.PostAsJsonAsync("emails", new
         {
-            From = new MailAddress(_options.Username, "Portfolio Contact Form"),
-            Subject = $"New contact message from {message.Name}",
-            Body = $"From: {message.Name} <{message.Email}>\n\n{message.Message}",
-        };
-        mail.To.Add(_options.ToAddress);
-        mail.ReplyToList.Add(new MailAddress(message.Email, message.Name));
+            from = $"Portfolio Contact <{_options.FromAddress}>",
+            to = new[] { _options.ToAddress },
+            subject = $"New contact message from {message.Name}",
+            text = $"From: {message.Name} <{message.Email}>\n\n{message.Message}",
+            reply_to = message.Email,
+        });
 
-        await client.SendMailAsync(mail);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Resend API returned {(int)response.StatusCode}: {body}");
+        }
     }
 }

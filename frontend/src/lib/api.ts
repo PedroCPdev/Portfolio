@@ -15,6 +15,7 @@ export async function getProjects(): Promise<Project[]> {
   try {
     const res = await fetch(`${API_URL}/api/projects`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return [];
     return res.json();
@@ -40,13 +41,17 @@ export async function sendContactMessage(payload: ContactPayload): Promise<Conta
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (res.status === 503) {
       return { success: false, error: "Too many messages sent. Try again in a minute." };
     }
+
+    const data: { error?: string } | null = await res.json().catch(() => null);
+
     if (!res.ok) {
-      return { success: false, error: "Failed to send message. Try again later." };
+      return { success: false, error: data?.error ?? "Failed to send message. Try again later." };
     }
     return { success: true };
   } catch {

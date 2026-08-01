@@ -31,6 +31,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ));
 
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<EmailService>();
 
 builder.Services.AddRateLimiter(options =>
