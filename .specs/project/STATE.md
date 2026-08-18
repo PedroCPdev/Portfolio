@@ -75,17 +75,22 @@ Memória persistente do projeto.
 - **Resolvido (2026-08-18):** chave movida para `~/.config/gcloud/` com permissão 600,
   fora da árvore do repositório. Ver L-006 para o risco descoberto no caminho.
 
-### B-003: `appsettings.json` local defasado em duas frentes — ABERTO
+### B-003: `appsettings.json` local defasado em duas frentes — PARCIALMENTE RESOLVIDO
 - **Descrição:** o arquivo local (gitignored) ainda tem `ConnectionStrings:DefaultConnection`
   do Postgres, **não tem seção `Firestore`**, e a seção `Email` está no formato SMTP antigo
   (`Host`, `Port`, `Username`, `Password`) enquanto `EmailService` lê `ApiKey`/`FromAddress`/
   `ToAddress` (Resend) desde o commit b1d321b.
 - **Efeito:** localmente o Firestore não conecta (falta `ProjectId`) e `IsConfigured` é false,
   então o contato degrada silenciosamente sem enviar e-mail.
-- **Contorno atual:** nenhum. Não editado — contém secrets reais do usuário.
-- **Caminho de resolução:** usuário adiciona `Firestore:ProjectId = portfoliodb-9215c` e
-  troca a seção `Email` para o formato Resend. A senha de app do Gmail que sobrou ali não é
-  mais lida por nenhum código — convém revogá-la.
+- **Resolvido (2026-08-18):** `Firestore:ProjectId` adicionado; `ConnectionStrings` morto
+  removido; seção `Email` convertida para o formato Resend (`ApiKey`/`FromAddress`/`ToAddress`),
+  com as 4 chaves SMTP mortas eliminadas — inclusive a senha de app do Gmail, que já não era
+  lida por nenhum código. App verificada subindo com a config nova.
+- **Residual:** `Email:ApiKey` está vazia — só o usuário tem a chave da Resend. Enquanto vazia,
+  o contato local registra aviso e não envia. O que importa em produção é a env var
+  `Email__ApiKey` no Render, que segue não verificada (a API responde sucesso mesmo sem ela).
+- **Ação do usuário:** revogar a senha de app do Gmail, que agora não existe em lugar nenhum
+  do disco mas continua válida na conta Google.
 
 ## Lições (L-NNN)
 
