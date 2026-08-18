@@ -5,6 +5,39 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-18 — Backlog da auditoria de segurança registrado em CONCERNS.md
+
+Os achados da auditoria de segurança deixaram de existir só na conversa: viraram C-5..C-12 em
+`codebase/CONCERNS.md`, na ordem de correção acordada, com `arquivo:linha` em cada um. Nenhum
+código foi tocado — é registro, não correção.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `.specs/codebase/CONCERNS.md` | modificado | C-5..C-12 acrescentados sob um cabeçalho de auditoria, mais a linha de base do que já está correto e não pode regredir |
+| `.specs/project/ROADMAP.md` | modificado | ponteiro para o backlog; sem ele o registro não sobreviveria a uma troca de sessão |
+
+**Por que o ponteiro no ROADMAP era necessário:** o carregamento base do harness é
+`PROJECT.md` + `ROADMAP.md` + `STATE.md`. `codebase/CONCERNS.md` não entra nele — registrar o
+backlog só lá deixaria o arquivo correto e invisível. O ROADMAP é o que faz a próxima sessão
+saber que ele existe.
+
+**O que foi registrado além dos problemas:** a seção de auditoria abre com o que a varredura
+confirmou estar **certo** (segredos ausentes do histórico, docs de API fechadas em produção,
+ausência de endpoints de escrita, React escapando por padrão, `dotnet list --vulnerable` limpo).
+Sem isso, uma sessão futura não teria como distinguir "não auditado" de "auditado e aprovado",
+e poderia regredir um acerto sem perceber.
+
+**Não toquei:** nenhum arquivo de código, nenhum item do backlog foi corrigido nesta tarefa —
+C-5 continua aberto e é o próximo. C-1..C-4 ficaram como estavam; são anteriores e não vieram
+desta auditoria, então não entraram na renumeração.
+
+**Gate:** não se aplica — a mudança é exclusivamente documental, sem código, build ou teste
+envolvido. `git diff --stat` confirma: só dois arquivos `.specs/`.
+
+**Commit:** `docs(specs): registrar backlog da auditoria de seguranca em concerns`
+
+---
+
 ## 2026-08-18 — Next 16.3.1 elimina os 4 CVEs high do bundle de produção
 
 O frontend deixou de subir para produção com dependências vulneráveis: `npm audit --omit=dev`
