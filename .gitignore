@@ -1,2 +1,13 @@
 .idea/
 PortfolioApi/appsettings.json
+
+# build artifacts .NET
+bin/
+obj/
+
+# Credenciais — NUNCA commitar
+# Service account do Firebase/GCP (qualquer nome, qualquer pasta)
+*firebase-adminsdk*.json
+*serviceAccount*.json
+*service-account*.json
+gcp-credentials*.json
