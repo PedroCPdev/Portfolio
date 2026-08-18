@@ -5,6 +5,44 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-18 — Cold start do Render deixa de esvaziar a seção de projetos
+
+Um cold start da API não faz mais o portfólio aparecer sem projetos; e o keep-alive
+mantém a instância acordada na janela de maior tráfego sem estourar a cota do Render.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `PortfolioApi/Endpoints/HealthEndpoints.cs` | criado | alvo de ping que responde sem consultar o Firestore |
+| `PortfolioApi/Program.cs` | modificado | registrar o endpoint de health |
+| `frontend/src/lib/api.ts:17-42` | modificado | insistir durante o religamento em vez de desistir em 8s |
+| `frontend/src/lib/__tests__/api.test.ts` | criado | RED: 3 casos de retry falhando antes da implementação |
+| `frontend/package.json` | modificado | vitest, para haver como provar lógica de frontend |
+| `.github/workflows/keep-api-awake.yml` | criado | manter a instância acordada dentro da cota gratuita |
+| `.specs/features/render-cold-start/` | criado | spec, matriz e evidências da feature |
+
+**Por que a janela de 16h e não 24/7:** o Render concede 750 instance-hours/mês e um
+serviço dormindo não consome nenhuma. Pingar o tempo todo consumiria ~744 h num mês de
+31 dias — margem de 6 h. Estourar a cota faz o Render suspender **todos** os serviços free
+até o mês seguinte, o que trocaria uma falha intermitente por uma falha total. Ver AD-005.
+
+**Por que um `/health` em vez de pingar `/api/projects`:** o ping roda ~96 vezes por dia;
+usar o endpoint de dados gastaria cota de leitura do Firestore sem ganho e faria o
+keep-alive falhar junto com o banco. Ver AD-006.
+
+**Efeito colateral conhecido:** com o retry, uma chamada a `getProjects()` com a API fora
+do ar agora leva ~54s antes de desistir, contra 8s antes. Isso atrasa o `next build`
+quando a API está indisponível no momento do build.
+
+**Não toquei:** a seção `Email` do `appsettings.json` — está quebrada desde b1d321b (B-003),
+mas contém credencial real e não é parte desta tarefa. Também não movi a leitura de
+projetos para o Next.js: resolveria o resíduo da madrugada, mas contraria AD-002.
+
+✓ Gate Full: `dotnet build` 0 warnings · API 12/12 · vitest 5/5 · lint e build limpos
+✓ Credencial real validada contra o Firestore de produção (somente leitura)
+✓ Commit: `feat: absorver cold start do render sem esvaziar a vitrine`
+
+---
+
 ## 2026-08-18 — Proteger service account do Firebase contra commit acidental
 
 Chave privada real adicionada ao repositório pelo usuário passou a ser ignorada pelo git,
