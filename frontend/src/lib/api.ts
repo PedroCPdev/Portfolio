@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5002";
 
 export interface Project {
-  id: number;
+  id: string;
   title: string;
   description: string;
   tags: string[];
@@ -11,17 +11,35 @@ export interface Project {
   createdAt: string;
 }
 
+// A API vive no free tier do Render, que desliga a instância após 15 min sem tráfego e
+// leva ~1 min para religar. Uma única tentativa de 8s falhava nesse intervalo e a seção
+// de projetos aparecia vazia. As tentativas abaixo cobrem ~54s no total.
+const PROJECTS_ATTEMPT_TIMEOUT_MS = 15_000;
+const PROJECTS_RETRY_DELAYS_MS = [3_000, 6_000];
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function getProjects(): Promise<Project[]> {
-  try {
-    const res = await fetch(`${API_URL}/api/projects`, {
-      next: { revalidate: 60 },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
-    return [];
+  const totalAttempts = PROJECTS_RETRY_DELAYS_MS.length + 1;
+
+  for (let attempt = 0; attempt < totalAttempts; attempt++) {
+    try {
+      const res = await fetch(`${API_URL}/api/projects`, {
+        next: { revalidate: 60 },
+        signal: AbortSignal.timeout(PROJECTS_ATTEMPT_TIMEOUT_MS),
+      });
+      // Erro de aplicação (4xx/5xx) não melhora com repetição — desiste na hora.
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      // Timeout ou falha de rede: pode ser cold start, então vale insistir.
+      const delay = PROJECTS_RETRY_DELAYS_MS[attempt];
+      if (delay !== undefined) await sleep(delay);
+    }
   }
+
+  // Todas as tentativas falharam. Devolve vazio em vez de lançar para não quebrar o build.
+  return [];
 }
 
 export interface ContactPayload {
