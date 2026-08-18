@@ -1,0 +1,12 @@
+# O SDK Web do .NET trata qualquer *.json do projeto como conteúdo e o copia para a
+# saída do publish — inclusive credenciais. Em produção o Render constrói a partir do
+# clone do git (onde a chave está ignorada), mas um `docker build` local pegaria o
+# arquivo do disco e o assaria dentro da imagem. Estas regras impedem isso.
+*firebase-adminsdk*.json
+*serviceAccount*.json
+*service-account*.json
+gcp-credentials*.json
+appsettings.json
+
+bin/
+obj/

@@ -64,7 +64,7 @@ Memória persistente do projeto.
   visitante nesse horário paga o cold start, agora absorvido pelo retry em vez de ver
   a seção vazia. Eliminar o resíduo exigiria plano pago ou mover a leitura para o Next.
 
-### B-002: Service account do Firebase dentro do repositório — MITIGADO
+### B-002: Service account do Firebase dentro do repositório — RESOLVIDO
 - **Descrição:** o arquivo `portfoliodb-9215c-firebase-adminsdk-fbsvc-d864c5e256.json`
   (projeto `portfoliodb-9215c`) foi colocado em `PortfolioApi/`. Chave privada real.
 - **Auditoria (2026-08-18):** nunca foi commitada. `git rev-list --all` + `git grep` não
@@ -72,8 +72,8 @@ Memória persistente do projeto.
   rotação desnecessária.**
 - **Contorno atual:** `.gitignore:8-14` ignora o formato (`*firebase-adminsdk*.json` e afins),
   não apenas este arquivo — chave nova ou renomeada continua protegida.
-- **Caminho de resolução:** ideal é a chave viver fora da árvore do repositório
-  (ex.: `~/.config/gcloud/`) apontada por `GOOGLE_APPLICATION_CREDENTIALS`. Decisão do usuário.
+- **Resolvido (2026-08-18):** chave movida para `~/.config/gcloud/` com permissão 600,
+  fora da árvore do repositório. Ver L-006 para o risco descoberto no caminho.
 
 ### B-003: `appsettings.json` local defasado em duas frentes — ABERTO
 - **Descrição:** o arquivo local (gitignored) ainda tem `ConnectionStrings:DefaultConnection`
@@ -103,6 +103,16 @@ be Utc`. Normalizar no model evita a exceção em runtime. Verificado no emulado
 ### L-003: Emulador Firestore exige JDK 21+
 `firebase-tools` recusa Java < 21. A máquina tem JDK 17 como padrão e JDK 25 em
 `/usr/lib/jvm/java-25-openjdk` — apontar `JAVA_HOME` para o 25 antes de subir o emulador.
+
+### L-006: o SDK Web do .NET assa qualquer `.json` do projeto dentro da imagem
+`Microsoft.NET.Sdk.Web` trata `**/*.json` como Content e copia para a saída do `publish`.
+Com a service account em `PortfolioApi/`, um `docker build` local a colocou em `/app/` dentro
+da imagem — junto com o `appsettings.json` e a senha do Gmail. Verificado inspecionando a
+imagem construída.
+
+Produção nunca foi afetada: o Render constrói a partir do clone do git, onde ambos estão
+ignorados, e lê a credencial de `Firestore__CredentialsJson`. O `.gitignore` sozinho **não**
+protege builds locais, porque o Docker lê do disco, não do git — daí o `PortfolioApi/.dockerignore`.
 
 ## Ideias Adiadas
 
