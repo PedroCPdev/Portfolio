@@ -75,7 +75,7 @@ Memória persistente do projeto.
 - **Resolvido (2026-08-18):** chave movida para `~/.config/gcloud/` com permissão 600,
   fora da árvore do repositório. Ver L-006 para o risco descoberto no caminho.
 
-### B-003: `appsettings.json` local defasado em duas frentes — PARCIALMENTE RESOLVIDO
+### B-003: `appsettings.json` local defasado em duas frentes — RESOLVIDO
 - **Descrição:** o arquivo local (gitignored) ainda tem `ConnectionStrings:DefaultConnection`
   do Postgres, **não tem seção `Firestore`**, e a seção `Email` está no formato SMTP antigo
   (`Host`, `Port`, `Username`, `Password`) enquanto `EmailService` lê `ApiKey`/`FromAddress`/
@@ -86,9 +86,9 @@ Memória persistente do projeto.
   removido; seção `Email` convertida para o formato Resend (`ApiKey`/`FromAddress`/`ToAddress`),
   com as 4 chaves SMTP mortas eliminadas — inclusive a senha de app do Gmail, que já não era
   lida por nenhum código. App verificada subindo com a config nova.
-- **Residual:** `Email:ApiKey` está vazia — só o usuário tem a chave da Resend. Enquanto vazia,
-  o contato local registra aviso e não envia. O que importa em produção é a env var
-  `Email__ApiKey` no Render, que segue não verificada (a API responde sucesso mesmo sem ela).
+- **Confirmado em produção (2026-08-18):** o usuário recebeu o e-mail de teste disparado pelo
+  formulário — logo `Email__ApiKey` está corretamente configurada no Render. `Email:ApiKey`
+  local segue vazia por escolha; afeta só o envio em desenvolvimento.
 - **Ação do usuário:** revogar a senha de app do Gmail, que agora não existe em lugar nenhum
   do disco mas continua válida na conta Google.
 

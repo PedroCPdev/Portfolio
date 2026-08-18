@@ -5,6 +5,33 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-18 — Migração concluída e confirmada em produção
+
+Portfólio servindo projetos do Firestore, formulário de contato entregando e-mail, e a API
+não depende mais de um banco que pausa.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `PortfolioApi/.dockerignore` | criado | impedir que credenciais entrem na imagem em build local |
+| `PortfolioApi/appsettings.json` | modificado | alinhar ao que o código lê (não versionado) |
+| `.specs/project/STATE.md` | modificado | fechar B-002 e B-003, registrar L-006 |
+
+**Confirmação do usuário:** e-mail chegou, projetos aparecendo. Encerra B-001 na prática
+para a janela coberta pelo keep-alive.
+
+**Armadilha registrada como L-006:** o `Microsoft.NET.Sdk.Web` copia qualquer `*.json` do
+projeto para a saída do publish. Um `docker build` local assou a service account e o
+`appsettings.json` dentro da imagem — produção nunca afetada, pois o Render constrói do
+clone do git. O `.gitignore` não cobre isso porque o Docker lê do disco.
+
+**Não toquei:** `Email:ApiKey` local segue vazia — a chave da Resend é do usuário e só
+afeta desenvolvimento; produção já está correta.
+
+✓ Produção: `/health` 200 · `/api/projects` 200 com 2 docs · site com cards · keep-alive 200
+✓ Commit: `chore(api): impedir que credenciais entrem na imagem docker`
+
+---
+
 ## 2026-08-18 — Cold start do Render deixa de esvaziar a seção de projetos
 
 Um cold start da API não faz mais o portfólio aparecer sem projetos; e o keep-alive
