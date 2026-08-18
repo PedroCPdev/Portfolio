@@ -122,6 +122,13 @@ protege builds locais, porque o Docker lê do disco, não do git — daí o `Por
 
 ## Ideias Adiadas
 
+- **Vulnerabilidades restantes em devDependencies.** Depois do bump para Next 16.3.1,
+  `npm audit --omit=dev` dá zero, mas `npm audit` completo ainda aponta 4 achados
+  (`postcss <=8.5.22` via `@tailwindcss/postcss` e `vitest`; `brace-expansion` e `js-yaml`
+  via a cadeia do eslint). Não vão para o bundle do visitante — o risco é limitado à máquina
+  de quem builda. Se for tratar, é `npm audit fix` sem `--force` e gate completo depois.
+  (2026-08-18)
+
 - **Introduzir DTOs na API.** Hoje os models são serializados direto (C-4), então mudar
   um campo quebra o contrato público sem aviso do compilador. (2026-08-18)
 - **Endpoints de escrita / painel admin** para cadastrar projetos sem abrir o console

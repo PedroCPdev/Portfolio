@@ -5,6 +5,45 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-18 — Next 16.3.1 elimina os 4 CVEs high do bundle de produção
+
+O frontend deixou de subir para produção com dependências vulneráveis: `npm audit --omit=dev`
+saiu de 4 vulnerabilidades high para zero. Nenhum comportamento da aplicação mudou — é troca
+de versão de dependência, sem alteração de código-fonte.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `frontend/package.json:14,25` | modificado | `next` e `eslint-config-next` fixados em 16.3.1; o 16.2.9 arrastava `postcss@8.4.31` e `sharp@0.34.5`, ambos com advisory high |
+| `frontend/package-lock.json` | modificado | regenerado por `npm install`: `sharp` 0.34.5 → 0.35.3, `postcss` aninhado do Next 8.4.31 → corrigido, mais 16 pacotes transitivos |
+| `.specs/project/STATE.md` | modificado | Ideia Adiada registrando por que `npm audit` (sem `--omit=dev`) ainda mostra 4 achados |
+
+**CVEs eliminados:** `postcss <=8.5.22` (XSS via `</style>` no stringify e três variantes de
+path traversal por `sourceMappingURL`) e `sharp <0.35.0` (libvips: CVE-2026-33327, CVE-2026-33328,
+CVE-2026-35590, CVE-2026-35591).
+
+**Por que pin explícito e não `npm audit fix --force`:** o `--force` chega ao mesmo 16.3.1, mas
+sem deixar no `package.json` o registro de qual versão foi escolhida e por quê. `eslint-config-next`
+subiu junto por exigência da própria Next de acompanhar a versão do framework — é devDependency,
+não entrava no escopo do CVE.
+
+**Não toquei:** `postcss`, `brace-expansion` e `js-yaml` que seguem vulneráveis via
+`@tailwindcss/postcss`, `vitest` e a cadeia do eslint. São devDependencies — não entram no bundle
+servido ao visitante, e é por isso que `npm audit --omit=dev` dá zero enquanto `npm audit` dá 4.
+Tratá-los agora seria escopo além do item auditado. Registrado como Ideia Adiada. Nenhum arquivo
+de código-fonte foi alterado: o diff é só as duas linhas do `package.json` e o lock regenerado.
+
+**Gate (frontend, `TESTING.md`):**
+```
+npm audit --omit=dev  → found 0 vulnerabilities   (antes: 4 high)
+npm test              → 1 arquivo, 5 testes, 5 passed
+npm run build         → Next.js 16.3.1, Compiled successfully in 3.2s, 4/4 páginas, exit 0
+npm run lint          → exit 0, sem saída
+```
+
+**Commit:** `fix(frontend): atualiza next para 16.3.1 e elimina cves de postcss e sharp`
+
+---
+
 ## 2026-08-18 — Alinhamento da documentação ao estado real do repositório
 
 A documentação do repositório passou a descrever o que o código faz hoje: Firestore em vez de
