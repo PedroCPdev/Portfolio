@@ -18,8 +18,8 @@ Memória persistente do projeto.
   Alternativa avaliada e recusada: Next ler o Firestore direto.
 - **Razão:** escolha explícita do usuário — preserva a arquitetura atual e mantém a
   API em C# como peça demonstrável do portfólio.
-- **Trade-off:** **não resolve o cold start do Render** (ver B-001), que continua
-  podendo exibir "no projects yet" mesmo com o Firestore no ar.
+- **Trade-off:** não resolve por si só o cold start do Render — tratado depois pela
+  feature `render-cold-start` (keep-alive + retry), não pela troca de banco.
 - **Impacto:** `GET /api/projects` permanece no caminho crítico da página.
 
 ### AD-003: Falha de seed não derruba mais o startup
@@ -53,17 +53,6 @@ Memória persistente do projeto.
 
 ## Bloqueios (B-NNN)
 
-### B-001: Cold start do Render mascarado como "sem projetos" — MITIGADO (2026-08-18)
-- **Descrição:** free tier do Render dorme após ~15 min. O cold start (~50s) estoura o
-  timeout de 8s de `getProjects()`, que engole o erro e retorna `[]` — o visitante vê
-  "no projects yet" como se o portfólio estivesse vazio.
-- **Contorno atual:** duas camadas, ver `features/render-cold-start` e AD-005 —
-  (1) keep-alive por GitHub Actions numa janela de 16h/dia, (2) retry com backoff no
-  `getProjects` cobrindo ~54s.
-- **Residual:** fora da janela (00:00–08:00 BRT) o serviço ainda dorme; o primeiro
-  visitante nesse horário paga o cold start, agora absorvido pelo retry em vez de ver
-  a seção vazia. Eliminar o resíduo exigiria plano pago ou mover a leitura para o Next.
-
 ### B-002: Service account do Firebase dentro do repositório — RESOLVIDO
 - **Descrição:** o arquivo `portfoliodb-9215c-firebase-adminsdk-fbsvc-d864c5e256.json`
   (projeto `portfoliodb-9215c`) foi colocado em `PortfolioApi/`. Chave privada real.
@@ -89,8 +78,9 @@ Memória persistente do projeto.
 - **Confirmado em produção (2026-08-18):** o usuário recebeu o e-mail de teste disparado pelo
   formulário — logo `Email__ApiKey` está corretamente configurada no Render. `Email:ApiKey`
   local segue vazia por escolha; afeta só o envio em desenvolvimento.
-- **Ação do usuário:** revogar a senha de app do Gmail, que agora não existe em lugar nenhum
-  do disco mas continua válida na conta Google.
+- **Ação do usuário:** a senha de app do Gmail não existe mais em disco, mas segue válida na
+  conta Google; o usuário assumiu a revogação em 2026-08-18 — passo fora do repositório,
+  não verificável a partir daqui.
 
 ## Lições (L-NNN)
 
@@ -109,6 +99,17 @@ be Utc`. Normalizar no model evita a exceção em runtime. Verificado no emulado
 `firebase-tools` recusa Java < 21. A máquina tem JDK 17 como padrão e JDK 25 em
 `/usr/lib/jvm/java-25-openjdk` — apontar `JAVA_HOME` para o 25 antes de subir o emulador.
 
+### L-004: `ConvertTo<T>()` já devolve null para documento inexistente
+Verificado no emulador: `Exists=False` → `ConvertTo<Project>()` retorna `null` (tipo de
+referência). A checagem explícita de `snapshot.Exists` em `FirestoreProjectStore` é portanto
+redundante — mantida por explicitar a intenção. Consequência prática: no teste de mutação, a
+remoção dessa checagem é **mutação equivalente**, não lacuna de cobertura.
+
+### L-005: `EmulatorDetection` padrão é `None`
+`new FirestoreDbBuilder()` ignora `FIRESTORE_EMULATOR_HOST` por padrão. Sem definir
+`EmulatorDetection.EmulatorOrProduction`, rodar a API local contra o emulador falha silenciosamente
+indo para produção. Verificado por reflection.
+
 ### L-006: o SDK Web do .NET assa qualquer `.json` do projeto dentro da imagem
 `Microsoft.NET.Sdk.Web` trata `**/*.json` como Content e copia para a saída do `publish`.
 Com a service account em `PortfolioApi/`, um `docker build` local a colocou em `/app/` dentro
@@ -121,31 +122,7 @@ protege builds locais, porque o Docker lê do disco, não do git — daí o `Por
 
 ## Ideias Adiadas
 
-- **Migrar os dados reais do Postgres para o Firestore.** Nesta feature o seed apenas
-  recria os 2 projetos de exemplo. Se houver projetos reais no Supabase, exportar antes
-  que a instância seja descartada. (2026-08-18)
 - **Introduzir DTOs na API.** Hoje os models são serializados direto (C-4), então mudar
   um campo quebra o contrato público sem aviso do compilador. (2026-08-18)
 - **Endpoints de escrita / painel admin** para cadastrar projetos sem abrir o console
   do Firebase. (2026-08-18)
-
-### L-004: `ConvertTo<T>()` já devolve null para documento inexistente
-Verificado no emulador: `Exists=False` → `ConvertTo<Project>()` retorna `null` (tipo de
-referência). A checagem explícita de `snapshot.Exists` em `FirestoreProjectStore` é portanto
-redundante — mantida por explicitar a intenção. Consequência prática: no teste de mutação, a
-remoção dessa checagem é **mutação equivalente**, não lacuna de cobertura.
-
-### L-005: `EmulatorDetection` padrão é `None`
-`new FirestoreDbBuilder()` ignora `FIRESTORE_EMULATOR_HOST` por padrão. Sem definir
-`EmulatorDetection.EmulatorOrProduction`, rodar a API local contra o emulador falha silenciosamente
-indo para produção. Verificado por reflection.
-
-## Pendências
-
-- **[Fora do escopo desta feature — reportado, não corrigido]** `CLAUDE.md` afirma que
-  "`Services/EmailService.cs` is an unimplemented stub; `POST /api/contact` currently just
-  validates and logs to console rather than sending mail". Isso está **desatualizado desde o
-  commit b1d321b**, que implementou o envio via Resend. Imprecisão pré-existente, não
-  introduzida pela migração Firestore. Corrigir numa tarefa própria.
-- Usuário mencionou **dois problemas** mas descreveu apenas o primeiro (Supabase pausando).
-  O segundo ainda não foi informado — perguntar antes de considerar o trabalho encerrado.

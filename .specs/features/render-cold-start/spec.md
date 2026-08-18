@@ -2,7 +2,7 @@
 
 Escopo classificado como: **Médio** (dois componentes, sem domínio novo)
 
-Resolve B-001. Problema relatado pelo usuário como "o Render parando".
+Problema relatado pelo usuário como "o Render parando".
 
 ## Problema
 

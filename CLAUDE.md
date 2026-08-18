@@ -53,16 +53,16 @@ Minimal API style, no controllers. `Program.cs` is organized in three commented 
 2. **Seed** — runs automatically on every startup, not just in Development; wrapped in try/catch that logs and continues
 3. **Pipeline + Endpoints** — Scalar docs mounted at `/scalar` only in Development; endpoints registered via extension methods
 
-Endpoints are grouped in `Endpoints/` as static classes with `Map*Endpoints(this WebApplication app)` extension methods (`ProjectsEndpoints`, `ContactEndpoints`), each mapping its own route group. `Data/FirestoreProjectStore.cs` is the only place that talks to Firestore, injected into endpoints the way `AppDbContext` used to be. `Services/DataSeeder.cs` seeds two example `Project` documents idempotently.
+Endpoints are grouped in `Endpoints/` as static classes with `Map*Endpoints(this WebApplication app)` extension methods (`ProjectsEndpoints`, `ContactEndpoints`, `HealthEndpoints`), each mapping its own route group. `GET /health` is the odd one out: it returns `{"status":"ok"}` without touching Firestore and is excluded from OpenAPI — it exists purely as the keep-alive ping target, so the ping costs no Firestore read quota. `Data/FirestoreProjectStore.cs` is the only place that talks to Firestore, injected into endpoints the way `AppDbContext` used to be. `Services/DataSeeder.cs` seeds two example `Project` documents idempotently.
 
-Firestore document ids are **strings** (20 chars), so `Project.Id` is a `string` and the route is `/{id}`, not `/{id:int}`. `Project.CreatedAt` normalizes any `DateTimeKind` to UTC in its setter — Firestore throws `ArgumentException` on non-UTC `DateTime`. `Services/EmailService.cs` is an unimplemented stub; `POST /api/contact` currently just validates and logs to console rather than sending mail.
+Firestore document ids are **strings** (20 chars), so `Project.Id` is a `string` and the route is `/{id}`, not `/{id:int}`. `Project.CreatedAt` normalizes any `DateTimeKind` to UTC in its setter — Firestore throws `ArgumentException` on non-UTC `DateTime`. `Services/EmailService.cs` sends through the Resend HTTP API; `POST /api/contact` validates, sends, and is rate-limited to 3 requests/min. When the `Email` section is not configured (`IsConfigured` false) it degrades silently — it logs and reports success without sending.
 
 `Models/` are plain classes with no separate DTOs — API responses serialize them directly (see `Project`, `ContactMessage`). `Project` carries Firestore mapping attributes (`[FirestoreData]`, `[FirestoreProperty]`, `[FirestoreDocumentId]`); `ContactMessage` is never persisted.
 
 ### Frontend (`frontend/`)
 Next.js App Router. `src/app/page.tsx` composes section components in fixed order (`Navbar`, `Hero`, `About`, `Projects`, `Contact`) inside a single-page layout; sections are anchored via `id` for in-page nav.
 
-`src/lib/api.ts` is the sole data-fetching boundary — typed `fetch` helpers against the API, using Next's `next: { revalidate: 60 }` for ISR. `Projects` (`src/components/Projects.tsx`) is an async server component that calls `getProjects()` directly; on fetch failure `getProjects` swallows the error and returns `[]`, and the component renders an empty-state message rather than an error.
+`src/lib/api.ts` is the sole data-fetching boundary — typed `fetch` helpers against the API, using Next's `next: { revalidate: 60 }` for ISR. `Projects` (`src/components/Projects.tsx`) is an async server component that calls `getProjects()` directly; on fetch failure `getProjects` swallows the error and returns `[]`, and the component renders an empty-state message rather than an error. Because Render's free tier sleeps, `getProjects` retries network/timeout failures 3 times (15s each, 3s and 6s backoff, ~54s total) before giving up — HTTP 4xx/5xx is not retried. Budget for that when a call runs with the API down.
 
 Styling is Tailwind v4 with inline utility classes using a consistent dark-navy palette (`#050d1a`, `#0d1b2e`, accent `#5ba0f5`) rather than themed/token-based classes — match existing hex/opacity patterns (e.g. `text-[#e8f0fe]/40`) when adding UI rather than introducing new colors.
 
@@ -73,5 +73,7 @@ Firestore credentials come from `Firestore:CredentialsJson` (the whole service a
 `Firestore__CredentialsJson` env var on Render — no credential file on disk). When empty, the app
 falls back to Application Default Credentials. `EmulatorDetection.EmulatorOrProduction` is set, so
 `FIRESTORE_EMULATOR_HOST` routes to a local emulator when present.
+
+`.github/workflows/keep-api-awake.yml` pings `/health` every 10 minutes between 08:00 and 00:00 BRT to keep the Render instance awake, and needs a `RENDER_API_URL` repository variable. The window is deliberately not 24/7: Render grants 750 instance-hours/month and exceeding it suspends every free service until the next month. See `.specs/codebase/INTEGRATIONS.md`.
 
 Project state, decisions and specs for this repo live in `.specs/` (see `.specs/project/STATE.md`).

@@ -1,5 +1,11 @@
 # Tasks — Migração para Cloud Firestore
 
+**Status: todas concluídas (2026-08-18).** Os critérios abaixo estão marcados a partir das
+evidências em `evidencias/` — `20260818-083555-gate-api-APROVADO.md` (build 0 warnings,
+`dotnet test` 12/12 sem skip, teste de mutação) e `20260818-083905-e2e-http-APROVADO.md`
+(FS-01..FS-07 por HTTP contra a API real). O gate `full` da feature seguinte
+(`render-cold-start`) reconfirmou build, testes, lint e `npm run build` sobre este mesmo código.
+
 ### T1: modelo Project mapeado para Firestore
 
 O quê:       `Project` com atributos Firestore, `Id` string, normalização UTC
@@ -9,9 +15,9 @@ Reutiliza:   nenhum (model novo)
 Requisito:   FS-05
 
 Concluída quando:
-  [ ] Id é string com `[FirestoreDocumentId]`
-  [ ] `CreatedAt` normaliza qualquer Kind para Utc no setter
-  [ ] gate passa: `dotnet build`
+  [x] Id é string com `[FirestoreDocumentId]`
+  [x] `CreatedAt` normaliza qualquer Kind para Utc no setter
+  [x] gate passa: `dotnet build`
 
 Gate: build
 Commit: refactor(api): mapear Project para documento do firestore
@@ -28,10 +34,10 @@ Reutiliza:   padrão de options de `Services/EmailService.cs:8`; try/catch de `P
 Requisito:   FS-01, FS-07
 
 Concluída quando:
-  [ ] `Google.Cloud.Firestore 4.4.0` referenciado; EF Core e Npgsql removidos
-  [ ] credencial via `CredentialFactory` (0 warnings de obsoleto)
-  [ ] seed em try/catch **sem** `throw`
-  [ ] gate passa: `dotnet build`
+  [x] `Google.Cloud.Firestore 4.4.0` referenciado; EF Core e Npgsql removidos
+  [x] credencial via `CredentialFactory` (0 warnings de obsoleto)
+  [x] seed em try/catch **sem** `throw`
+  [x] gate passa: `dotnet build`
 
 Gate: build
 Commit: feat(api): substituir ef core/postgres por cloud firestore
@@ -47,10 +53,10 @@ Reutiliza:   `Map*Endpoints` de `Endpoints/ProjectsEndpoints.cs:9`
 Requisito:   FS-02, FS-03, FS-04
 
 Concluída quando:
-  [ ] lista ordenada por `createdAt` desc
-  [ ] id existente → 200 com `id` string preenchido
-  [ ] id inexistente → 404 sem exceção
-  [ ] gate passa: `dotnet build`
+  [x] lista ordenada por `createdAt` desc
+  [x] id existente → 200 com `id` string preenchido
+  [x] id inexistente → 404 sem exceção
+  [x] gate passa: `dotnet build`
 
 Gate: build
 Commit: feat(api): ler projetos do firestore via store dedicada
@@ -66,9 +72,9 @@ Reutiliza:   guarda de idempotência de `Services/DataSeeder.cs:11`
 Requisito:   FS-06
 
 Concluída quando:
-  [ ] coleção vazia → semeia 2 projetos
-  [ ] coleção não vazia → não semeia (rodar 2x não duplica)
-  [ ] gate passa: `dotnet build`
+  [x] coleção vazia → semeia 2 projetos
+  [x] coleção não vazia → não semeia (rodar 2x não duplica)
+  [x] gate passa: `dotnet build`
 
 Gate: build
 Commit: feat(api): semear projetos no firestore de forma idempotente
@@ -84,10 +90,10 @@ Reutiliza:   nenhum (primeiro projeto de teste do repo)
 Requisito:   FS-09 (+ evidência de FS-02..FS-06)
 
 Concluída quando:
-  [ ] testes rodam contra emulador e passam de verdade
-  [ ] nenhum teste com skip/ignore para forçar verde
-  [ ] gate passa: `dotnet test`
-  [ ] contagem de testes registrada em evidencias/
+  [x] testes rodam contra emulador e passam de verdade
+  [x] nenhum teste com skip/ignore para forçar verde
+  [x] gate passa: `dotnet test`
+  [x] contagem de testes registrada em evidencias/
 
 Tests: integration
 Gate: quick
@@ -104,8 +110,8 @@ Reutiliza:   interface existente `frontend/src/lib/api.ts:3`
 Requisito:   FS-08
 
 Concluída quando:
-  [ ] `id: string`
-  [ ] gate passa: `npm run build` e `npm run lint`
+  [x] `id: string`
+  [x] gate passa: `npm run build` e `npm run lint`
 
 Gate: full
 Commit: refactor(frontend): tratar id de projeto como string
@@ -121,8 +127,8 @@ Reutiliza:   estrutura do exemplo atual
 Requisito:   suporte a FS-01
 
 Concluída quando:
-  [ ] exemplo mostra `Firestore:ProjectId` e `CredentialsJson` sem segredo real
-  [ ] docs descrevem env vars do Render e emulador local
+  [x] exemplo mostra `Firestore:ProjectId` e `CredentialsJson` sem segredo real
+  [x] docs descrevem env vars do Render e emulador local
 
 Gate: build
 Commit: docs: documentar configuracao do firestore

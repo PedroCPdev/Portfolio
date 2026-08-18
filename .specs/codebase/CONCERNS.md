@@ -1,14 +1,19 @@
 # CONCERNS.md
 
-## C-1: Cold start do Render mascarado como "sem projetos" — ALTO
-`getProjects()` (`frontend/src/lib/api.ts`) tem timeout de 8s e **engole qualquer erro**
-retornando `[]`. `Projects.tsx` então renderiza "no projects yet". Resultado: um cold start
-do Render (~50s no free tier) é indistinguível de "banco vazio" para o visitante.
-Trocar o banco **não resolve isso** — ver B-001.
+## C-1: Cold start do Render mascarado como "sem projetos" — MITIGADO (2026-08-18)
+`getProjects()` (`frontend/src/lib/api.ts`) engole qualquer erro e retorna `[]`, e
+`Projects.tsx` renderiza "no projects yet" — um cold start do Render (~50s no free tier) era
+indistinguível de "banco vazio" para o visitante. Trocar o banco não resolveu isso.
+Mitigação em duas camadas (feature `render-cold-start`): keep-alive por GitHub Actions das
+08:00 às 00:00 BRT e retry com backoff cobrindo ~54s. **Resíduo:** fora dessa janela o serviço
+ainda dorme; o primeiro visitante da madrugada paga o religamento, agora absorvido pelo retry
+em vez de ver a seção vazia. Eliminar o resíduo exigiria plano pago ou mover a leitura para o Next.
 
-## C-2: Ausência total de testes — ALTO (endereçado nesta migração)
-Nenhum dos dois sub-projetos tinha test runner. A migração introduz `PortfolioApi.Tests`
-(xUnit) rodando contra o emulador Firestore.
+## C-2: Cobertura de testes recente e estreita — MÉDIO
+Até 2026-08-18 nenhum dos dois sub-projetos tinha test runner. Hoje existem
+`PortfolioApi.Tests` (xUnit, contra o emulador Firestore) e `vitest` no frontend, mas a
+cobertura se concentra no que as duas features tocaram: acesso ao Firestore, seed e o retry
+de `getProjects`. Componentes React e `EmailService` seguem sem teste.
 
 ## C-3: `DateTime` não-UTC quebra a escrita no Firestore — MÉDIO
 Verificado empiricamente: `ArgumentException: Conversion from DateTime to Timestamp requires

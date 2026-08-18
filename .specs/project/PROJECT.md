@@ -17,7 +17,9 @@ server-side; API ASP.NET Core Minimal expõe os dados e recebe mensagens de cont
 
 ## Restrições
 - **Tudo em free tier.** Qualquer solução escolhida não pode depender de plano pago.
-- **Free tier do Render dorme** após ~15 min sem tráfego → cold start de ~50s (ver B-001).
+- **Free tier do Render dorme** após ~15 min sem tráfego → cold start de ~50s. Mitigado pelo
+  keep-alive em janela de 16h (AD-005) e pelo retry de `getProjects` (~54s de cobertura);
+  entre 00:00 e 08:00 BRT o primeiro acesso ainda paga o religamento.
 - Sem monorepo: `frontend/` e `PortfolioApi/` têm toolchains independentes, sem package.json/solution raiz.
 - CORS travado numa única origem lida de `AllowedOrigins`; muda junto com `NEXT_PUBLIC_API_URL`.
 

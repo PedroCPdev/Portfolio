@@ -60,7 +60,7 @@ ENTÃO os testes de integração DEVEM executar contra o emulador Firestore loca
 
 ## Fora de escopo
 
-- Resolver o cold start do Render (C-1 / B-001) — problema distinto, não é causado pelo banco
+- Resolver o cold start do Render (C-1) — problema distinto, não é causado pelo banco
 - Migrar os dados existentes do Postgres para o Firestore (o seed recria os 2 exemplos)
 - Endpoints de escrita (POST/PUT/DELETE de projetos) — escrita segue manual no console Firebase
 - Autenticação/autorização de qualquer endpoint

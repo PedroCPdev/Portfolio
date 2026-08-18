@@ -2,7 +2,7 @@
 
 ## frontend/
 - Next.js 16.2.9 (App Router), React 19.2.4, TypeScript 5, Tailwind CSS v4
-- Gerenciador: npm. Sem test runner configurado.
+- Gerenciador: npm. Testes: vitest 3.2 (`npm test`), desde 2026-08-18.
 - Ícones: react-icons 5.6, lucide-react 1.18
 
 ## PortfolioApi/

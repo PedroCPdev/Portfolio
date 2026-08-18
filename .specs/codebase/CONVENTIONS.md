@@ -10,7 +10,8 @@
 
 ## Frontend
 - Server components async chamando `src/lib/api.ts` direto (ex.: `Projects.tsx`).
-- Falha de fetch é **engolida** e vira estado vazio, nunca erro visível (`getProjects` retorna `[]`).
+- Falha de fetch é **engolida** e vira estado vazio, nunca erro visível (`getProjects` retorna `[]`)
+  — mas só depois de 3 tentativas com backoff, para não confundir cold start com lista vazia.
 - Tailwind v4 com classes utilitárias inline e paleta dark-navy **hex literal**:
   fundo `#050d1a`, card `#0d1b2e`, acento `#5ba0f5`, texto `#e8f0fe` (com opacidade `/40`, `/25`...).
   **Não introduzir cores novas nem tokens temáticos** — seguir os hex existentes.

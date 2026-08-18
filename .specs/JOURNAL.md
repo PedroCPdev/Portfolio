@@ -5,6 +5,46 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-18 — Alinhamento da documentação ao estado real do repositório
+
+A documentação do repositório passou a descrever o que o código faz hoje: Firestore em vez de
+Postgres, e-mail via Resend em vez de stub, e o keep-alive registrado como mecanismo permanente
+em vez de só como entrada de journal.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `README.md` | modificado | descrevia PostgreSQL/EF Core/migrations — nada disso existe desde a migração |
+| `CLAUDE.md:56,58,65,77` | modificado | `EmailService` não é stub desde b1d321b; faltavam `/health`, retry e keep-alive |
+| `.specs/codebase/INTEGRATIONS.md` | modificado | keep-alive ganhou seção "Como funciona" permanente (gatilho, ordem, sinal de vida, onde desligar) |
+| `.specs/codebase/ARCHITECTURE.md` | modificado | fluxo de dados sem `/health`; retry do frontend não aparecia |
+| `.specs/codebase/CONCERNS.md` | modificado | C-1 marcado ALTO já mitigado; C-2 dizia "ausência total de testes" |
+| `.specs/codebase/STACK.md` | modificado | frontend constava "sem test runner"; existe vitest |
+| `.specs/codebase/STRUCTURE.md` | modificado | faltavam `PortfolioApi.Tests/`, `__tests__/`, workflows, `.dockerignore` |
+| `.specs/codebase/CONVENTIONS.md` | modificado | a regra do fetch engolido agora menciona o retry antes da desistência |
+| `.specs/project/STATE.md` | modificado | B-001 e a seção Pendências removidos a pedido do usuário; L-004..L-006 reordenadas |
+| `.specs/project/ROADMAP.md` | modificado | Firestore constava EM ANDAMENTO e cold start como não especificado |
+| `.specs/project/PROJECT.md` | modificado | restrição do Render apontava para B-001, que deixou de existir |
+| `.specs/features/firestore-migration/tasks.md` | modificado | 22 critérios sem marcar apesar das evidências APROVADO |
+| `.specs/features/*/spec.md` | modificado | remover referências órfãs a B-001 |
+
+**Decisões do usuário registradas:** o Supabase só tinha os 2 projetos de exemplo, então a ideia
+adiada de migrar dados reais foi encerrada; o segundo problema mencionado na migração já estava
+resolvido; a revogação da senha de app do Gmail ficou com o usuário; B-001 foi excluído por
+escolha dele — o resíduo do cold start segue documentado em C-1, AD-005 e PROJECT.md.
+
+**Sobre marcar os checkboxes de `tasks.md`:** não houve nova execução de gate. As marcações
+citam as evidências já existentes em `evidencias/`, e o cabeçalho do arquivo diz isso
+explicitamente para não simular um gate que não rodou nesta tarefa.
+
+**Não toquei:** entradas anteriores do JOURNAL, que citam B-001 — é append-only e reescrever
+histórico seria pior que a referência morta. Nenhum arquivo de código foi alterado: o diff é
+100% `.md`.
+
+✓ Gate: nenhum, tarefa exclusivamente documental — `git diff --name-only` confirma só `.md`
+✓ Commit: `docs: alinhar documentacao ao estado real do repositorio`
+
+---
+
 ## 2026-08-18 — Migração concluída e confirmada em produção
 
 Portfólio servindo projetos do Firestore, formulário de contato entregando e-mail, e a API
