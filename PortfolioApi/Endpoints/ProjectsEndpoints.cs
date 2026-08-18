@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using Portfolio.Data;
-using Portfolio.Models;
 
 namespace Portfolio.Endpoints;
 
@@ -11,12 +9,13 @@ public static class ProjectsEndpoints
         var group = app.MapGroup("/api/projects")
             .WithTags("Projects");
 
-        group.MapGet("/", async (AppDbContext db) => 
-            Results.Ok(await db.Projects.ToListAsync()));
+        group.MapGet("/", async (FirestoreProjectStore store, CancellationToken cancellationToken) =>
+            Results.Ok(await store.GetAllAsync(cancellationToken)));
 
-        group.MapGet("/{id:int}", async (int id, AppDbContext db) =>
+        // Id do Firestore é string (20 caracteres), não int — a restrição :int saiu da rota.
+        group.MapGet("/{id}", async (string id, FirestoreProjectStore store, CancellationToken cancellationToken) =>
         {
-            var project = await db.Projects.FindAsync(id);
+            var project = await store.GetByIdAsync(id, cancellationToken);
             return project is null ? Results.NotFound() : Results.Ok(project);
         });
     }
