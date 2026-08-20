@@ -5,6 +5,33 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Tags do Portfolio Frontend em produção (dado real)
+
+Terceira e menor operação em dado real: só o campo `tags` de um documento.
+
+| Alvo | Ação | Por quê |
+|---|---|---|
+| `projects/R9ZGZNOdNpZtYWkYWnTN` (Portfolio Frontend) | `tags` reescritas | `Next.js` e `React` sem versão não dizem se é App Router ou Pages, nem React 18 ou 19 — e o card da API ao lado já estava versionado |
+
+`TypeScript, Next.js, React, Tailwind CSS` → `TypeScript, Next.js 16, React 19, Tailwind v4, Vercel`.
+
+**Por que versionar.** Numa vitrine de portfólio a versão é metade da informação: "Next.js" pode
+ser Pages Router de 2021, "Next.js 16" não. `Vercel` entrou para o card espelhar o da API, que
+carrega `Render` — o alvo de deploy é parte do que o projeto demonstra.
+
+**Escrita cirúrgica:** `updateMask.fieldPaths=tags`, e só `tags` no corpo. As 5 decisões, a
+`description`, as urls e o `createdAt` seguem intactos, confirmado por comparação com o dump.
+
+**Rollback:** `scratchpad/dump-prod-2026-08-20175940.json`.
+
+**Verificado no site público:** as tags novas apareceram na home ~30s depois, e `Tailwind CSS`
+sumiu. Sem redeploy — o ISR de 60s virou sozinho.
+
+**Não toquei:** a `description` do Portfolio Frontend, que segue "Personal Portfolio built using
+Next.js 16 and React 19. Minimalistic dark design, C# API integrated." O trecho "C# API
+integrated" ficou truncado e agora é redundante com as tags, mas a mudança não foi pedida.
+
+
 ## 2026-08-20 — Mais decisões e tags do Portfolio API em produção (dado real)
 
 Segunda operação em dado real. Os dois projetos foram de 3 para 5 decisões, e as tags do
