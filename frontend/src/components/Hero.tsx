@@ -11,8 +11,15 @@ export default function Hero() {
         </div>
 
         <div className="min-w-0">
-          <h1 className="m-0 max-w-[18ch] font-display text-[clamp(2.5rem,6vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.035em] text-ink">
-            I build the boring parts that have to stay up.
+          {/* Nome e tese no mesmo h1: numa pagina de portfolio o nome e o cabecalho
+              principal, e separa-lo em outro elemento o tiraria da estrutura de titulos. */}
+          <h1 className="m-0 flex flex-col gap-5">
+            <span className="font-display text-[clamp(1.125rem,1.5vw,1.4rem)] font-medium tracking-[0.01em] text-ink">
+              Pedro Chasci Puga
+            </span>
+            <span className="max-w-[18ch] font-display text-[clamp(2.5rem,6vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.035em] text-ink">
+              I build the boring parts that have to stay up.
+            </span>
           </h1>
 
           <p className="measure mt-7 text-[1.0625rem] leading-relaxed text-ink-dim">

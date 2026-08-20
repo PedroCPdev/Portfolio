@@ -98,6 +98,14 @@ describe("DR-03 e DR-06 tells de template removidos", () => {
   it("não anuncia o cargo genérico como manchete do hero", () => {
     expect(read("src/components/Hero.tsx")).not.toMatch(/>\s*Software Developer\s*</);
   });
+
+  // É uma página de portfólio: o nome de quem assina precisa estar no cabeçalho principal,
+  // não só no <title> e no handle da navbar.
+  it("o hero traz o nome completo dentro do h1", () => {
+    const hero = read("src/components/Hero.tsx");
+    const h1 = hero.slice(hero.indexOf("<h1"), hero.indexOf("</h1>"));
+    expect(h1, "o nome completo precisa estar dentro do h1").toContain("Pedro Chasci Puga");
+  });
 });
 
 // DR-07 — foco de teclado sempre visível.

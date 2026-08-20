@@ -5,6 +5,27 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Nome completo no cabeçalho do hero
+
+O hero passou a abrir com "Pedro Chasci Puga" acima da tese. É página de portfólio: o nome de
+quem assina precisava estar visível, não só no `<title>` e no handle da navbar.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `frontend/src/components/Hero.tsx` | modificado | nome como primeira linha **dentro** do `<h1>`, em display face menor que a tese |
+| `frontend/src/__tests__/design-system.test.ts` | modificado | asserção de que o nome completo está dentro do `h1`, não solto acima dele |
+
+**Por que dentro do `h1` e não num elemento próprio:** separar o nome em um `<p>` acima o tiraria
+da estrutura de títulos da página. Numa página de portfólio o nome é o cabeçalho principal —
+junto com a tese ele forma o `h1`, o que também é o que a busca por "Pedro Chasci Puga" indexa.
+O peso visual continua na tese: o nome é bem menor e sem o extrabold.
+
+**Não toquei:** o handle `pedrocpdev` na navbar e no footer continua como está — é o identificador
+curto, e repetir o nome completo nos três lugares seria redundante.
+
+**Gate:** `npx vitest run` → 31 passed · `npx eslint .` → exit 0 · `npm run build` → compilou.
+
+
 ## 2026-08-20 — Vitrine na home, raciocínio em `/projects/{id}`, e largura que acompanha a tela
 
 A home voltou a ser vitrine: um card por projeto, em grid que vai de 1 a 3 colunas. O raciocínio
