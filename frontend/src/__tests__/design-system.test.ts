@@ -134,39 +134,98 @@ describe("DR-09 vocabulário consistente", () => {
   });
 });
 
-// DR-05 — o ledger é o elemento-assinatura e degrada sem o campo.
-describe("DR-05 trade-off ledger", () => {
-  it("marca a linha de custo com o token clay", () => {
-    const ledger = read("src/components/Ledger.tsx");
-    expect(ledger).toMatch(/text-clay/);
-    expect(ledger).toContain("Cost");
+// PD-01 / PD-05 — o registro de decisão é o elemento-assinatura, agora no detalhe.
+describe("PD-05 registro de decisão", () => {
+  it("mostra o porquê e marca o custo com o token clay", () => {
+    const rec = read("src/components/DecisionRecord.tsx");
+    expect(rec).toContain("Why");
+    expect(rec).toContain("Cost");
+    expect(rec).toMatch(/text-clay/);
   });
 
   it("renderiza o bloco de custo apenas quando o campo existe", () => {
-    const ledger = read("src/components/Ledger.tsx");
-    expect(ledger).toMatch(/cost\?:\s*string/);
-    expect(ledger, "o bloco de custo precisa ser condicional").toMatch(/\{cost\s*&&/);
-  });
-
-  it("liga tradeoff do projeto ao ledger", () => {
-    const projects = read("src/components/Projects.tsx");
-    expect(projects).toMatch(/cost=\{project\.tradeoff\}/);
-  });
-
-  // TR-05: `tradeoff` passou a existir no contrato de /api/projects, então o alias local que
-  // estendia o tipo não tem mais razão de ser — manter os dois é como as duas definições divergem.
-  it("lê tradeoff do tipo de api.ts, sem alias local", () => {
-    expect(read("src/lib/api.ts")).toMatch(/tradeoff\?:\s*string/);
-    expect(read("src/components/Projects.tsx")).not.toContain("ProjectRecord");
+    const rec = read("src/components/DecisionRecord.tsx");
+    expect(rec, "o bloco de custo precisa ser condicional").toMatch(/\{decision\.cost\s*&&/);
   });
 
   it("reserva clay a custo e erro — nenhum outro componente o usa", () => {
-    const ALLOWED = new Set(["Ledger.tsx", "ContactForm.tsx"]);
+    const ALLOWED = new Set(["DecisionRecord.tsx", "ContactForm.tsx"]);
     const offenders = sourceFiles()
       .filter((f) => f.includes("components"))
       .filter((f) => /clay/.test(readFileSync(f, "utf8")))
       .map((f) => f.split("/").pop() as string)
       .filter((name) => !ALLOWED.has(name));
     expect(offenders, `clay usado fora do papel: ${offenders.join(", ")}`).toEqual([]);
+  });
+});
+
+// PD-03 — a home voltou a ser vitrine; o raciocínio mora na página de detalhe.
+describe("PD-03 home não carrega decisão", () => {
+  it("não renderiza decisão nem custo na seção de projetos", () => {
+    const projects = read("src/components/Projects.tsx");
+    expect(projects).not.toContain("DecisionRecord");
+    expect(projects).not.toMatch(/>\s*Cost\s*</);
+  });
+
+  it("não renderiza decisão nem custo no hero", () => {
+    const hero = read("src/components/Hero.tsx");
+    expect(hero).not.toContain("DecisionRecord");
+    expect(hero).not.toContain("Ledger");
+    expect(hero).not.toMatch(/>\s*(Kept|Cost)\s*</);
+  });
+});
+
+// PD-04 / PD-06 / PD-07 — o card leva a uma URL própria, e a rota trata ausência.
+describe("PD-04 navegação para o detalhe", () => {
+  it("o card aponta para /projects/{id}", () => {
+    const projects = read("src/components/Projects.tsx");
+    expect(projects).toMatch(/href=\{`\/projects\/\$\{project\.id\}`\}/);
+  });
+
+  it("a rota de detalhe existe e usa notFound para id inexistente", () => {
+    const page = read("src/app/projects/[id]/page.tsx");
+    expect(page).toContain("next/navigation");
+    expect(page).toMatch(/if\s*\(!project\)\s*notFound\(\)/);
+  });
+
+  it("a rota de detalhe trata projeto sem decisões", () => {
+    const page = read("src/app/projects/[id]/page.tsx");
+    expect(page).toMatch(/decisions\.length === 0/);
+  });
+});
+
+// PD-08 — largura e grid acompanham a tela; a prosa não.
+describe("PD-08 responsividade", () => {
+  it("define o contêiner .shell e a medida de leitura .measure", () => {
+    const css = read("src/app/globals.css");
+    expect(css).toMatch(/\.shell\s*\{/);
+    expect(css).toMatch(/\.measure\s*\{/);
+    expect(css).toMatch(/max-width:\s*65ch/);
+  });
+
+  it("o grid de projetos ganha colunas conforme a viewport", () => {
+    const projects = read("src/components/Projects.tsx");
+    expect(projects).toContain("sm:grid-cols-2");
+    expect(projects).toContain("xl:grid-cols-3");
+  });
+
+  it("nenhum componente prende a página na largura antiga", () => {
+    for (const file of sourceFiles()) {
+      expect(readFileSync(file, "utf8"), `${file} ainda usa max-w-5xl`).not.toContain("max-w-5xl");
+    }
+  });
+});
+
+// PD-01 — o contrato do frontend acompanha o da API.
+describe("PD-01 contrato de decisões no frontend", () => {
+  it("api.ts expõe Decision e o campo decisions, e não expõe mais tradeoff", () => {
+    const api = read("src/lib/api.ts");
+    expect(api).toMatch(/export interface Decision/);
+    expect(api).toMatch(/decisions\?:\s*Decision\[\]/);
+    expect(api).not.toMatch(/tradeoff/);
+  });
+
+  it("api.ts expõe getProject para a página de detalhe", () => {
+    expect(read("src/lib/api.ts")).toMatch(/export async function getProject\(/);
   });
 });

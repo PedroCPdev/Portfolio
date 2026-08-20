@@ -17,8 +17,12 @@
   `--paper` `#1c1f18`, `--rule` `#2e3327`, `--ink` `#e6e8df`, `--ink-dim` `#9da396`,
   `--amber` `#e0a43c`, `--clay` `#b5563c`. Usar as utilities (`bg-ground`, `text-amber`,
   `border-rule`), nunca hex literal em componente — `design-system.test.ts` falha se um aparecer.
-- `--clay` é **reservado** a dois papéis: a linha de custo do trade-off ledger e mensagem de erro.
-  Usá-lo para qualquer outra coisa quebra o teste que guarda essa reserva.
+- `--clay` é **reservado** a dois papéis: a linha de custo em `DecisionRecord.tsx` e mensagem de
+  erro em `ContactForm.tsx`. Usá-lo em qualquer outro componente quebra o teste que guarda a reserva.
+- Largura é responsabilidade de `globals.css`, não de componente: `.shell` é o contêiner da página
+  e `.measure` limita a prosa a 65ch. Nenhum componente define `max-w-*` de página — tela larga
+  alarga o contêiner, nunca a linha de leitura.
+- A home é vitrine e **não** mostra decisão nem custo; o raciocínio vive em `/projects/{id}`.
 - Três famílias com papéis fixos: `font-display` (Bricolage Grotesque) só em manchete e título,
   `font-body` (Newsreader) na prosa, `font-mono` (JetBrains Mono) em id, rótulo e tag — nunca prosa.
 - As variáveis do `next/font` ficam no `<html>`, não no `<body>`: os tokens são declarados em

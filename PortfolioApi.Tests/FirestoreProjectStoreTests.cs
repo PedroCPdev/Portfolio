@@ -141,45 +141,65 @@ public class FirestoreProjectStoreTests : IClassFixture<FirestoreFixture>
         Assert.Equal(1, await store.CountAsync());
     }
 
-    // TR-01: o custo do trade-off sobrevive à ida e volta no Firestore
+    // PD-01: a lista de decisões faz round-trip, incluindo a ordem e os três campos de cada uma
     [Fact]
-    public async Task AddAsync_faz_round_trip_do_tradeoff()
+    public async Task AddAsync_faz_round_trip_da_lista_de_decisoes()
     {
         var store = _fixture.NewStore(out _);
-        var project = NewProject("com custo", DateTime.UtcNow);
-        project.Tradeoff = "Sem SQL, sem joins, sem migrations versionadas.";
+        var project = NewProject("com decisões", DateTime.UtcNow);
+        project.Decisions =
+        [
+            new Decision
+            {
+                Title = "Firestore over PostgreSQL",
+                Why = "O Postgres pausava por inatividade e derrubava a API junto.",
+                Cost = "Sem SQL, sem joins, sem migrations versionadas.",
+            },
+            new Decision
+            {
+                Title = "Keep-alive de 16h",
+                Why = "744 das 750 instance-hours do mês.",
+                Cost = "A madrugada paga o cold start.",
+            },
+        ];
 
         var id = await store.AddAsync(project);
 
         var found = await store.GetByIdAsync(id);
         Assert.NotNull(found);
-        Assert.Equal("Sem SQL, sem joins, sem migrations versionadas.", found!.Tradeoff);
+        Assert.Equal(2, found!.Decisions.Length);
+        Assert.Equal("Firestore over PostgreSQL", found.Decisions[0].Title);
+        Assert.Equal("O Postgres pausava por inatividade e derrubava a API junto.", found.Decisions[0].Why);
+        Assert.Equal("Sem SQL, sem joins, sem migrations versionadas.", found.Decisions[0].Cost);
+        // A ordem é informação: é a sequência em que o autor quer que sejam lidas.
+        Assert.Equal("Keep-alive de 16h", found.Decisions[1].Title);
     }
 
-    // TR-01: campo ausente é legítimo — o ledger degrada sem ele
+    // PD-02: projeto sem decisões devolve lista vazia, não null — quem consome não checa null
     [Fact]
-    public async Task AddAsync_sem_tradeoff_devolve_null()
+    public async Task AddAsync_sem_decisoes_devolve_lista_vazia()
     {
         var store = _fixture.NewStore(out _);
 
-        var id = await store.AddAsync(NewProject("sem custo", DateTime.UtcNow));
+        var id = await store.AddAsync(NewProject("sem decisões", DateTime.UtcNow));
 
         var found = await store.GetByIdAsync(id);
         Assert.NotNull(found);
-        Assert.Null(found!.Tradeoff);
+        Assert.Empty(found!.Decisions);
     }
 
-    // TR-02: o Firestore é schemaless, então os documentos que já estão em produção não têm a
-    // chave `tradeoff`. Este teste grava um documento cru sem ela — como se tivesse sido escrito
-    // antes do campo existir — e prova que a leitura não estoura. É o único risco real da mudança.
+    // PD-02: este é o risco real da mudança. Todo documento que já está em produção foi gravado
+    // sem a chave `decisions`. Se a leitura estourasse com ela ausente, GET /api/projects
+    // quebraria inteiro no primeiro deploy — e um teste que grava pelo próprio model nunca
+    // pegaria isso, porque o model sempre grava a chave. Por isso o documento aqui é cru.
     [Fact]
-    public async Task GetAllAsync_le_documento_gravado_antes_do_campo_existir_sem_lancar()
+    public async Task GetAllAsync_le_documento_sem_a_chave_decisions_sem_lancar()
     {
         var store = _fixture.NewStore(out var collection);
         await _fixture.Db.Collection(collection).AddAsync(new Dictionary<string, object>
         {
             ["title"] = "documento legado",
-            ["description"] = "gravado antes de tradeoff existir",
+            ["description"] = "gravado antes de decisions existir",
             ["tags"] = new[] { "C#" },
             ["createdAt"] = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         });
@@ -188,19 +208,41 @@ public class FirestoreProjectStoreTests : IClassFixture<FirestoreFixture>
 
         var legacy = Assert.Single(all);
         Assert.Equal("documento legado", legacy.Title);
-        Assert.Null(legacy.Tradeoff);
+        Assert.Empty(legacy.Decisions);
     }
 
-    // TR-04: o seed é a única fonte de exemplo do ledger para quem sobe o projeto do zero
+    // PD-01: decisão com campos ausentes não vira null no meio da lista
     [Fact]
-    public async Task SeedAsync_semeia_projetos_com_tradeoff_preenchido()
+    public async Task AddAsync_preserva_decisao_com_custo_vazio()
+    {
+        var store = _fixture.NewStore(out _);
+        var project = NewProject("decisão sem custo", DateTime.UtcNow);
+        project.Decisions = [new Decision { Title = "Só o porquê", Why = "Motivo." }];
+
+        var id = await store.AddAsync(project);
+
+        var found = await store.GetByIdAsync(id);
+        var only = Assert.Single(found!.Decisions);
+        Assert.Equal("Só o porquê", only.Title);
+        Assert.True(string.IsNullOrEmpty(only.Cost));
+    }
+
+    // PD-01: o seed é a única fonte de exemplo para quem sobe o projeto do zero
+    [Fact]
+    public async Task SeedAsync_semeia_projetos_com_decisoes()
     {
         var store = _fixture.NewStore(out _);
 
         await DataSeeder.SeedAsync(store, NullLogger.Instance);
 
         var all = await store.GetAllAsync();
-        Assert.All(all, p => Assert.False(string.IsNullOrWhiteSpace(p.Tradeoff)));
+        Assert.All(all, p => Assert.NotEmpty(p.Decisions));
+        Assert.All(all, p => Assert.All(p.Decisions, d =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(d.Title));
+            Assert.False(string.IsNullOrWhiteSpace(d.Why));
+            Assert.False(string.IsNullOrWhiteSpace(d.Cost));
+        }));
     }
 
     [Fact]

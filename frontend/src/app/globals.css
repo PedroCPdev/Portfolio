@@ -56,6 +56,33 @@
     color: var(--ink-dim);
   }
 
+  /* Conteiner unico da pagina (PD-08). Largura maxima generosa para monitor grande; o
+     respiro lateral cresce junto com a tela em vez de ficar preso num valor de celular. */
+  .shell {
+    width: 100%;
+    max-width: 96rem;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .shell {
+      padding-inline: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .shell {
+      padding-inline: 4rem;
+    }
+  }
+
+  /* Largura de leitura. Separada da largura do conteiner de proposito: linha de prosa longa
+     e ilegivel por mais espaco que sobre na tela, entao esticar o shell nao estica o texto. */
+  .measure {
+    max-width: 65ch;
+  }
+
   /* DR-07 — foco de teclado sempre visível, com anel próprio contra o ground. */
   :focus-visible {
     outline: 2px solid var(--amber);

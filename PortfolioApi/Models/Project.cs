@@ -21,13 +21,14 @@ public class Project
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// O que a decisão por trás do projeto custou — a contraparte de <see cref="Description"/>,
-    /// que conta o que foi ganho. Opcional por construção: o Firestore é schemaless e os
-    /// documentos gravados antes deste campo existir leem como null, caso em que o ledger do
-    /// frontend não renderiza a linha de custo.
+    /// As decisões de engenharia do projeto, na ordem em que devem ser lidas. Alimenta a página
+    /// de detalhe (`/projects/{id}`); a home não as mostra.
+    /// Vazio por padrão, nunca null: o Firestore é schemaless e os documentos gravados antes
+    /// deste campo existir simplesmente não têm a chave, caso em que a leitura devolve lista
+    /// vazia e quem consome faz `.map` direto, sem checar null.
     /// </summary>
-    [FirestoreProperty("tradeoff")]
-    public string? Tradeoff { get; set; }
+    [FirestoreProperty("decisions")]
+    public Decision[] Decisions { get; set; } = [];
 
     [FirestoreProperty("tags")]
     public string[] Tags { get; set; } = [];

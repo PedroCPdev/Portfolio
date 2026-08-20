@@ -12,7 +12,7 @@ export default function Contact() {
   return (
     <Section id="contact" rail={<span>Contact</span>} title="Start a conversation">
       <div className="flex flex-col gap-10">
-        <p className="m-0 max-w-[52ch] text-ink-dim">
+        <p className="measure m-0 text-ink-dim">
           Open to backend roles and to collaborating on .NET work. Tell me what you are
           building and what constraint you are stuck on.
         </p>

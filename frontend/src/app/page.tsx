@@ -15,7 +15,7 @@ export default function Home() {
         <Contact />
       </main>
       <footer className="border-t border-rule">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-6 py-8 font-mono text-[0.6875rem] text-ink-dim md:px-10">
+        <div className="shell flex flex-wrap items-center justify-between gap-2 py-8 font-mono text-[0.6875rem] text-ink-dim">
           <span>Pedro Chasci Puga — 2026</span>
           <span>Next.js frontend · ASP.NET Core API · Firestore</span>
         </div>

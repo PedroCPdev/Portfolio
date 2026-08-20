@@ -1,13 +1,21 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5002";
 
+/** Uma decisão de engenharia do projeto: o que foi decidido, por quê, e o que custou. */
+export interface Decision {
+  title: string;
+  why: string;
+  /** Opcional: decisão sem custo declarado aparece sem a linha de custo. */
+  cost?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
   description: string;
-  /** O que a decisão por trás do projeto custou. Opcional: documentos gravados antes do
-   *  campo existir vêm sem ele, e o ledger não renderiza a linha de custo. */
-  tradeoff?: string;
   tags: string[];
+  /** A API sempre envia um array; opcional aqui porque o tipo não pode provar isso.
+   *  Quem consome usa `?? []` em vez de checar null. Alimenta só `/projects/{id}`. */
+  decisions?: Decision[];
   githubUrl?: string;
   liveUrl?: string;
   imageUrl?: string;
@@ -22,18 +30,20 @@ const PROJECTS_RETRY_DELAYS_MS = [3_000, 6_000];
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function getProjects(): Promise<Project[]> {
+/**
+ * Busca com tolerância a cold start. Devolve a resposta HTTP mesmo quando ela é de erro —
+ * quem chama decide o que 4xx/5xx significa — e null quando a rede falhou em todas as tentativas.
+ * Erro de aplicação não melhora com repetição, então só timeout/falha de rede é repetido.
+ */
+async function fetchWithColdStartRetry(path: string): Promise<Response | null> {
   const totalAttempts = PROJECTS_RETRY_DELAYS_MS.length + 1;
 
   for (let attempt = 0; attempt < totalAttempts; attempt++) {
     try {
-      const res = await fetch(`${API_URL}/api/projects`, {
+      return await fetch(`${API_URL}${path}`, {
         next: { revalidate: 60 },
         signal: AbortSignal.timeout(PROJECTS_ATTEMPT_TIMEOUT_MS),
       });
-      // Erro de aplicação (4xx/5xx) não melhora com repetição — desiste na hora.
-      if (!res.ok) return [];
-      return await res.json();
     } catch {
       // Timeout ou falha de rede: pode ser cold start, então vale insistir.
       const delay = PROJECTS_RETRY_DELAYS_MS[attempt];
@@ -41,8 +51,21 @@ export async function getProjects(): Promise<Project[]> {
     }
   }
 
-  // Todas as tentativas falharam. Devolve vazio em vez de lançar para não quebrar o build.
-  return [];
+  return null;
+}
+
+export async function getProjects(): Promise<Project[]> {
+  const res = await fetchWithColdStartRetry("/api/projects");
+  // Devolve vazio em vez de lançar para não quebrar o build nem a página.
+  if (!res || !res.ok) return [];
+  return await res.json();
+}
+
+/** Devolve null quando o projeto não existe (404) ou quando a API não respondeu. */
+export async function getProject(id: string): Promise<Project | null> {
+  const res = await fetchWithColdStartRetry(`/api/projects/${encodeURIComponent(id)}`);
+  if (!res || !res.ok) return null;
+  return await res.json();
 }
 
 export interface ContactPayload {

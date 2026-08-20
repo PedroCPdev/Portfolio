@@ -18,7 +18,21 @@ public static class DataSeeder
             {
                 Title = "Portfolio API",
                 Description = "RESTful API built with ASP.NET Core 9, Google Cloud Firestore and Scalar. exposes projects endpoint via Next.js.",
-                Tradeoff = "It runs on a free tier that sleeps after 15 minutes of no traffic. The first visitor after a quiet night waits about a minute for the container to wake, and the frontend retries for 54 seconds to cover it.",
+                Decisions =
+                [
+                    new Decision
+                    {
+                        Title = "Firestore over a relational database",
+                        Why = "The managed Postgres it replaced paused on inactivity, and a paused database took the whole API down with it — including endpoints that never touched a database. Firestore's free tier does not pause.",
+                        Cost = "No SQL, no joins, no versioned migrations. Document ids stopped being integers, so the public contract changed and the frontend changed with it.",
+                    },
+                    new Decision
+                    {
+                        Title = "A seed failure no longer stops startup",
+                        Why = "A database outage used to take down endpoints that did not need the database at all. Logging and carrying on turns a total outage into a partial one.",
+                        Cost = "The API can now report itself healthy while serving an empty project list.",
+                    },
+                ],
                 Tags = ["C#", ".NET 9", "Firestore", "NoSQL", "Scalar"],
                 GithubUrl = "https://github.com/PedroCPdev/Portfolio",
                 CreatedAt = DateTime.UtcNow,
@@ -27,7 +41,21 @@ public static class DataSeeder
             {
                 Title = "Portfolio Frontend",
                 Description = "Personal Portfolio built using Next.js 16 and React 19. Minimalistic dark design, C# API integrated.",
-                Tradeoff = "There is no admin area, so adding a project means writing the document by hand in the Firebase console. With ISR at 60 seconds, the change also takes up to a minute to show up.",
+                Decisions =
+                [
+                    new Decision
+                    {
+                        Title = "Server rendering with a 60 second cache",
+                        Why = "The project list changes a few times a year. Rendering it on the server keeps the page fast and indexable without shipping a data-fetching layer to the browser.",
+                        Cost = "A newly published project can take up to a minute to appear, and the page cannot show anything personalised per visitor.",
+                    },
+                    new Decision
+                    {
+                        Title = "No admin area",
+                        Why = "An authenticated CRUD would be the largest part of this codebase, to be used a handful of times a year by one person.",
+                        Cost = "Publishing a project means writing the document by hand in the Firebase console.",
+                    },
+                ],
                 Tags = ["TypeScript", "Next.js", "React", "Tailwind CSS"],
                 GithubUrl = "https://github.com/PedroCPdev/Portfolio",
                 LiveUrl = "https://pedrocpdev.vercel.app",

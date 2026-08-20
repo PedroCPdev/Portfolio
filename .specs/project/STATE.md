@@ -66,6 +66,31 @@ Memória persistente do projeto.
 - **Impacto:** 8 componentes reescritos, `SectionHeader` virou `Section` + `Ledger`. Nenhuma mudança
   em `src/lib/api.ts`, no contrato de `/api/projects` ou na API .NET. Decidido em 2026-08-20 pelo usuário.
 
+### AD-008: Separar vitrine de raciocínio — página por projeto
+- **Decisão:** a home volta a ser vitrine (card por projeto, grid responsivo) e o raciocínio de
+  engenharia migra para `/projects/{id}`. O campo `tradeoff` (string única, AD-007) é substituído
+  por `decisions: Decision[]`, cada uma com `title`, `why` e `cost`.
+- **Razão:** com o ledger na home, a primeira tela era longa e o visitante tinha que ler três
+  trade-offs antes de saber quais projetos existem. Separar dá à vitrine a função de vitrine e
+  ao raciocínio o espaço que ele precisa — inclusive para mais de uma decisão por projeto,
+  que a string única não comportava. Pedido do usuário em 2026-08-20.
+- **Trade-off:** o argumento mais forte do portfólio deixa de estar na primeira tela e passa a
+  exigir um clique. A aposta é que o rótulo "3 decisions →" no card compra esse clique. Também
+  dobra o custo de digitação no console do Firebase: são três campos por decisão, sem painel admin.
+- **Impacto:** contrato público muda de novo (`tradeoff` sai, `decisions` entra) — ninguém em
+  produção usava `tradeoff`, então não há dado a migrar. Rota nova pré-renderizada por
+  `generateStaticParams`. `Ledger.tsx` vira `DecisionRecord.tsx`.
+
+### AD-009: Largura da página em `.shell` / `.measure`, não em componente
+- **Decisão:** duas classes em `globals.css` passam a ser as únicas donas de largura:
+  `.shell` (contêiner, 96rem) e `.measure` (prosa, 65ch). `max-w-5xl` some do código.
+- **Razão:** o layout anterior prendia tudo em 64rem centralizado, o que num monitor grande virava
+  uma coluna estreita no meio da tela — queixa direta do usuário. Separar contêiner de linha de
+  leitura permite alargar um sem alargar o outro.
+- **Trade-off:** duas classes globais num projeto que até aqui só usava utilitário inline.
+  Em compensação a largura deixa de ser decidida em oito arquivos diferentes.
+- **Impacto:** `design-system.test.ts` falha se `max-w-5xl` voltar a aparecer em `src/`.
+
 ## Bloqueios (B-NNN)
 
 ### B-002: Service account do Firebase dentro do repositório — RESOLVIDO

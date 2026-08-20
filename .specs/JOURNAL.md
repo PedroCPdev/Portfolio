@@ -5,6 +5,56 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Vitrine na home, raciocínio em `/projects/{id}`, e largura que acompanha a tela
+
+A home voltou a ser vitrine: um card por projeto, em grid que vai de 1 a 3 colunas. O raciocínio
+de engenharia saiu dela e ganhou página própria, onde cada decisão aparece com o porquê e o custo.
+O campo `tradeoff` (string única) deu lugar a `decisions: Decision[]`.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `PortfolioApi/Models/Decision.cs` | criado | `title`/`why`/`cost`; a ordem na lista é informação, não detalhe de armazenamento |
+| `PortfolioApi/Models/Project.cs` | modificado | `Decisions` (`:31`) no lugar de `Tradeoff`; default `[]`, nunca null |
+| `PortfolioApi/Services/DataSeeder.cs` | modificado | dois projetos de exemplo com duas decisões cada |
+| `PortfolioApi.Tests/FirestoreProjectStoreTests.cs` | modificado | round-trip da lista aninhada, ordem, custo vazio, e documento cru sem a chave |
+| `PortfolioApi.Tests/ProjectContractTests.cs` | modificado | `decisions[].title/why/cost` em camelCase, array vazio, e ausência de `tradeoff` |
+| `frontend/src/lib/api.ts` | modificado | `Decision`, `decisions?`, e `getProject` (`:65`); retry de cold start extraído para servir as duas chamadas |
+| `frontend/src/app/projects/[id]/page.tsx` | criado | rota de detalhe, `generateStaticParams`, `generateMetadata`, `notFound()` |
+| `frontend/src/components/DecisionRecord.tsx` | renomeado de `Ledger.tsx` | um registro por decisão; `why` e `cost` lado a lado a partir de `lg` |
+| `frontend/src/components/Projects.tsx` | modificado | grid de cards `1 → 2 → 3` colunas, cada card linkando para o detalhe |
+| `frontend/src/components/Hero.tsx` | modificado | bloco AD-001 removido: decisão não mora mais na home |
+| `frontend/src/components/Section.tsx` | modificado | usa `.shell`; título com `clamp` |
+| `frontend/src/components/Navbar.tsx` | modificado | `<Link>` no lugar de `<a>` (a nav existe em duas rotas agora), âncoras absolutas `/#work` |
+| `frontend/src/app/globals.css` | modificado | `.shell` (`:61`) e `.measure` (`:82`) |
+| `frontend/src/app/page.tsx`, `About.tsx`, `Contact.tsx` | modificados | contêiner e medida de leitura compartilhados |
+| `frontend/src/__tests__/design-system.test.ts` | modificado | bloco DR-05 substituído pelos PD-01/03/04/05/08 |
+| `.specs/features/project-detail-page/` | criado | spec PD-01..PD-09 com matriz |
+| `.specs/project/STATE.md` | modificado | AD-008 (separar vitrine de raciocínio) e AD-009 (largura em `.shell`/`.measure`) |
+| `.specs/codebase/CONVENTIONS.md`, `TESTING.md`, `CLAUDE.md` | modificados | reserva do clay aponta para o arquivo novo, regra de largura, contagem do gate, e as duas rotas |
+
+**Por que os testes de `tradeoff` sumiram.** Não foram apagados para reduzir falha: o campo deixou
+de existir por decisão do usuário (AD-008), e cada um foi substituído pelo equivalente em
+`decisions` — inclusive o mais importante, o que grava um documento **cru** sem a chave para provar
+que documento antigo não estoura na leitura. A contagem subiu: 18 → 20 na API, 22 → 30 no frontend.
+
+**A queixa de "tudo centralizado" era estrutural.** O layout prendia tudo em `max-w-5xl` (64rem)
+repetido em oito arquivos. A correção não foi aumentar o número: foi separar largura de contêiner
+(`.shell`) de largura de leitura (`.measure`), porque esticar a segunda junto com a primeira só
+troca uma coluna estreita por linha de texto ilegível. Um teste falha se `max-w-5xl` voltar.
+
+**Duas correções vieram do screenshot, não do gate:** as réguas de `Why`/`Cost` esticavam pela
+coluna inteira enquanto o texto parava em 65ch, deixando régua pendurada sobre vazio; e o registro
+de decisão tinha três níveis de indentação. Ambas invisíveis para build, lint e testes.
+
+**Não toquei:** os documentos de produção seguem sem `decisions`, então em `pedrocpdev.vercel.app`
+cada página de detalhe vai dizer que as decisões ainda não foram escritas até você preenchê-las.
+Não criei endpoint de escrita nem painel admin. Não mexi em `imageUrl`, que continua no model sem
+uso na UI.
+
+**Gate:** `dotnet test PortfolioApi.Tests` → 20 passed (emulador) · `npx vitest run` → 30 passed ·
+`npx eslint .` → exit 0 · `npm run build` → 7 rotas, 3 páginas de projeto pré-renderizadas.
+
+
 ## 2026-08-20 — Campo `tradeoff` no contrato: API, Firestore e frontend
 
 O trade-off ledger passou a ter as duas metades. `Project.Tradeoff` existe no model, é gravado e

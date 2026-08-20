@@ -25,7 +25,7 @@ export default function About() {
   return (
     <Section id="about" rail={<span>Profile</span>} title="How I work">
       <div className="flex flex-col gap-10">
-        <p className="m-0 max-w-[58ch] text-ink-dim">
+        <p className="measure m-0 text-ink-dim">
           I maintain and build .NET services — the kind that sit behind something else and
           are only noticed when they stop. Most of what I do is deciding which constraint to
           accept: a free tier that sleeps, a database without joins, a seed that fails without
