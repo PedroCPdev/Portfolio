@@ -5,6 +5,37 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Description do Portfolio Frontend em produção (dado real)
+
+Última das quatro operações em dado real. Um campo, um documento.
+
+| Alvo | Ação | Por quê |
+|---|---|---|
+| `projects/R9ZGZNOdNpZtYWkYWnTN` (Portfolio Frontend) | `description` reescrita | o texto anterior terminava em "C# API integrated", truncado, e repetia o que as tags já diziam |
+
+Antes: *"Personal Portfolio built using Next.js 16 and React 19. Minimalistic dark design,
+C# API integrated."*
+Depois: *"The site you are reading. One server-rendered page — no client-side router, no state
+library — and every project on it comes from the C# API in the same repository."*
+
+**O critério.** Na vitrine a `description` é o resumo do card, logo acima das tags. Repetir
+"Next.js 16 e React 19" ali era gastar duas linhas para dizer o que a linha de tags diz melhor.
+O texto novo usa o espaço para o que as tags não conseguem: o que a página **é** e como ela se
+liga ao outro projeto. Também espelha a voz do card da API, que fecha com "if you are reading
+this, it answered" — os dois agora se apresentam do mesmo jeito.
+
+**Escrita cirúrgica:** `updateMask.fieldPaths=description`. As 5 decisões, as tags, urls e
+`createdAt` intactos, confirmado contra o dump.
+
+**Rollback:** `scratchpad/dump-prod-2026-08-20180431.json`.
+
+**Verificado no site público:** o texto novo apareceu ~30s depois e `C# API integrated` sumiu.
+Sem redeploy.
+
+**Estado final dos dois documentos de produção:** 5 decisões cada, tags versionadas, descrições
+reescritas. Nenhum campo pendente que eu tenha identificado.
+
+
 ## 2026-08-20 — Tags do Portfolio Frontend em produção (dado real)
 
 Terceira e menor operação em dado real: só o campo `tags` de um documento.
