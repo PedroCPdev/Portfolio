@@ -5,6 +5,38 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Backfill de `decisions` em produção (dado real)
+
+Operação em dado real, autorizada pelo usuário depois de dump e revisão do conteúdo.
+Não é mudança de código: nenhum arquivo da aplicação foi tocado nesta entrada.
+
+| Alvo | Ação | Por quê |
+|---|---|---|
+| `projects/kBo99k1ss9KSRJCK8HrY` (Portfolio API) | `decisions` (3) + `description` reescrita | a description tinha frase quebrada e virou o resumo visível no card da home |
+| `projects/R9ZGZNOdNpZtYWkYWnTN` (Portfolio Frontend) | `decisions` (3) | fecha a página de detalhe com conteúdo real |
+
+**Como foi feito, e por que não pelo console.** À mão seriam 18 entradas de texto dentro de uma
+estrutura array-de-map, que o console do Firebase trata mal. Foi um script sem dependências
+(`scratchpad/write-prod.mjs`) assinando JWT com a service account de `~/.config/gcloud/`.
+
+**O que protegeu a operação:** `updateMask.fieldPaths` em cada PATCH. Sem ele o Firestore
+**substitui o documento inteiro** e `title`, `tags`, `githubUrl`, `liveUrl` e `createdAt` teriam
+sido apagados. A verificação pós-escrita comparou todos os campos contra o dump: preservados.
+
+**Rollback disponível:** `scratchpad/dump-prod-2026-08-20174041.json` guarda o estado anterior dos
+dois documentos. Mesmo sem rollback, apagar `decisions` devolve array vazio na leitura e a página
+degrada sem quebrar — é o que o teste PD-02 garante.
+
+**Não toquei:** a `description` do Portfolio Frontend (não foi aprovada; segue "Personal Portfolio
+built using Next.js 16 and React 19. Minimalistic dark design, C# API integrated."). Não criei o
+documento do "Keep-alive scheduler" — ele nunca existiu em produção, era invenção minha para o
+preview local. Nenhuma regra, índice ou outra coleção foi tocada.
+
+**Ordem importa e foi respeitada:** o backfill entrou **antes** do deploy. A API que está no ar
+ainda não conhece `decisions` e simplesmente ignora o campo, então nada quebrou no intervalo — e
+quando o deploy entrar, as páginas de detalhe já nascem com conteúdo.
+
+
 ## 2026-08-20 — Nome completo no cabeçalho do hero
 
 O hero passou a abrir com "Pedro Chasci Puga" acima da tese. É página de portfólio: o nome de
