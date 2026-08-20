@@ -91,6 +91,33 @@ Memória persistente do projeto.
   Em compensação a largura deixa de ser decidida em oito arquivos diferentes.
 - **Impacto:** `design-system.test.ts` falha se `max-w-5xl` voltar a aparecer em `src/`.
 
+### AD-010: Prosa é posicionamento; lista de tecnologias é fato
+- **Decisão:** o texto corrido do site (metadata, hero, abertura do About, contato) não nomeia
+  linguagem nem framework, e não rotula o autor por recorte ("backend"). O fato técnico vive
+  na lista Core/Also do About, nas tags dos projetos e no rodapé.
+- **Razão:** o usuário busca oportunidades em qualquer linguagem, e o texto anterior
+  ("Backend engineer working in C# and .NET", "I maintain and build .NET services",
+  "Open to backend roles and to collaborating on .NET work") fazia um recrutador de outra
+  stack se autoexcluir. Apagar o `.NET` de tudo seria o erro oposto: a página ficaria vaga e
+  o candidato, sem quilometragem demonstrável.
+- **Trade-off:** a página perde o match óbvio e imediato para quem procura especificamente
+  .NET — agora esse leitor precisa chegar até a lista Core. Aceito conscientemente pelo
+  usuário (alcance > match imediato).
+- **Impacto:** `design-system.test.ts` → `PS-01` falha nos dois sentidos: se `C#`/`.NET`/
+  `ASP.NET`/`backend` voltarem à prosa, **e** se o `.NET` sumir da lista Core.
+
+### AD-011: Ícone do site em `app/icon.svg`, pintado por classe e não por custom property
+- **Decisão:** o favicon padrão do Next sai do repositório; entra `src/app/icon.svg` (o
+  brackets ⟨P⟩), com as cores em seletor de classe sob `@media (prefers-color-scheme)`.
+- **Razão:** o SVG original do usuário usava `var(--bg)`/`var(--fg)`. librsvg 2.62 — motor SVG
+  do ImageMagick e de vários crawlers e geradores de preview — não resolve custom property e
+  renderizava o ícone como quadrado preto sólido, sem o P. Verificado por experimento com três
+  SVGs mínimos, não por memória.
+- **Trade-off:** o `.svg` fica um pouco mais verboso que a versão com tokens. Em troca a mesma
+  arte funciona no navegador e em qualquer rasterizador.
+- **Impacto:** `design-system.test.ts` → `PS-02` exige `icon.svg` presente, `favicon.ico`
+  ausente, e o bloco `prefers-color-scheme` com o `aria-label` preservado.
+
 ## Bloqueios (B-NNN)
 
 ### B-002: Service account do Firebase dentro do repositório — RESOLVIDO
@@ -171,6 +198,18 @@ pego por screenshot, não por gate. Correção: as variáveis do `next/font` vã
 Guardado por um teste de regressão em `design-system.test.ts`.
 
 ## Ideias Adiadas
+
+- **A lista Core do About continua sendo o sinal `.NET` mais forte da página.** Depois do
+  AD-010 a prosa é neutra, mas o bloco Core é `C# · .NET · ASP.NET Core · PostgreSQL ·
+  Firestore · Docker` — 4 de 6 são .NET, e é o primeiro bloco visual que um recrutador
+  escaneia. O usuário decidiu explicitamente não mexer nele nesta tarefa. Se um dia quiser
+  ir além, a forma seria agrupar por eixo (linguagens / dados / infra) em vez de por
+  profundidade. (2026-08-20)
+
+- **Ícone só em SVG.** Não existe `apple-icon`, `manifest.json` nem open-graph image, e não há
+  `.ico` multi-tamanho — a 16px o brackets fica macio por desenho, e um `.ico` rasterizado à
+  mão em 16/32/48 daria mais controle de hinting. Só vale a pena se o borrão incomodar no ar.
+  (2026-08-20)
 
 - **Vulnerabilidades restantes em devDependencies.** Depois do bump para Next 16.3.1,
   `npm audit --omit=dev` dá zero, mas `npm audit` completo ainda aponta 4 achados

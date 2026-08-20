@@ -13,8 +13,8 @@ export default function Contact() {
     <Section id="contact" rail={<span>Contact</span>} title="Start a conversation">
       <div className="flex flex-col gap-10">
         <p className="measure m-0 text-ink-dim">
-          Open to backend roles and to collaborating on .NET work. Tell me what you are
-          building and what constraint you are stuck on.
+          Open to engineering roles in any language or stack. Tell me what you are building
+          and what constraint you are stuck on.
         </p>
 
         <ContactForm />

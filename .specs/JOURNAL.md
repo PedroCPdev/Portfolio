@@ -5,6 +5,55 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Ícone do site e posicionamento sem recorte de stack
+
+A página deixou de se apresentar como "backend engineer working in C# and .NET" e passou a se
+apresentar como software engineer, sem nomear stack no texto corrido; a aba do navegador deixou
+de mostrar o favicon padrão do Next e passou a mostrar o ⟨P⟩.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `frontend/src/app/icon.svg` | criado | o brackets ⟨P⟩ escolhido pelo usuário, pela convenção de arquivo do App Router |
+| `frontend/src/app/favicon.ico` | removido | era o ícone padrão do Next, intocado desde `c11f5bf`; se ficasse, concorreria com o `icon.svg` no `<head>` |
+| `frontend/src/app/layout.tsx:27-29` | modificado | `<title>` e description: "backend engineer ... C# and .NET" → "software engineer" |
+| `frontend/src/components/Hero.tsx:8-9,26-29` | modificado | trilho `Backend / C# · .NET` → `Software engineer / APIs · data · deploy`; parágrafo perde o rótulo de stack |
+| `frontend/src/components/About.tsx:29-33` | modificado | "I maintain and build .NET services" → "I build and maintain services"; o resto do parágrafo já era neutro |
+| `frontend/src/components/Contact.tsx:16-17` | modificado | "Open to backend roles and to collaborating on .NET work" → "in any language or stack" |
+| `frontend/src/__tests__/design-system.test.ts` | modificado | +8 casos: `PS-01` (prosa sem recorte, nos dois sentidos) e `PS-02` (ícone) |
+| `.specs/features/generic-positioning-and-icon/spec.md` | criado | requisitos, decisões do usuário e rastreabilidade |
+| `.specs/project/STATE.md` | modificado | AD-010, AD-011 e duas ideias adiadas |
+
+**O teste que guarda os dois sentidos.** `PS-01` falha se `C#`, `.NET`, `ASP.NET` ou `backend`
+voltarem à prosa — e falha também se `.NET` sumir da lista Core do About. Sem a segunda metade,
+uma limpeza futura genericizaria a página até ela não afirmar mais nada. A separação virou
+AD-010: prosa é posicionamento, lista de tecnologias é fato.
+
+**Achado que mudou a implementação.** O `icon-brackets.svg` do zip pintava tudo com
+`var(--bg)`/`var(--fg)`. Rasterizado por librsvg 2.62 (motor SVG do ImageMagick e de vários
+crawlers e geradores de preview) ele saía **quadrado preto sólido, sem o P**: custom property
+não é resolvida, `fill` e `stroke` viram declaração inválida e são descartados. Verificado por
+experimento — três SVGs mínimos rasterizados lado a lado: cor literal ✓, seletor de classe com
+`@media` ✓, `var()` ✗. O `icon.svg` commitado usa seletor de classe, geometria idêntica ao
+original. Ver AD-011.
+
+**Limitação conhecida, sinalizada antes da escolha e aceita:** a 16px os chevrons ficam macios.
+Confirmado rasterizando em 16/32/64 de verdade — o P continua identificável, o ⟨ ⟩ perde
+definição. O `icon-monogram.svg` do zip é a alternativa se incomodar no ar.
+
+**Gate (saída real):** `npm test` 39/39 (baseline era 31 — subiu 8, não caiu),
+`npm run build` compilado com `/icon.svg` listado como rota, `eslint` exit 0. Verificado também
+no artefato construído, não só no teste: o `<head>` de `.next/server/app/index.html` traz
+exatamente um `<link rel="icon" ... type="image/svg+xml">`, o `<title>` é o novo, e o texto
+extraído das quatro seções não contém `C#`, `.NET` nem `backend`.
+
+**Não toquei:** as duas `description` dos projetos em produção (Firestore) — decisão do usuário;
+descrevem projetos que **são** de fato .NET e genericizá-las seria mentir sobre o que o projeto
+é. A lista Core/Also do About, que segue sendo o sinal `.NET` mais forte da página (4 de 6),
+também por decisão dele — registrada como ideia adiada. O rodapé
+(`Next.js frontend · ASP.NET Core API · Firestore`), que descreve a stack do próprio site e é
+fato. E `frontend/assets/files.zip`, que segue não rastreado, para o usuário decidir se entra.
+
+
 ## 2026-08-20 — Description do Portfolio Frontend em produção (dado real)
 
 Última das quatro operações em dado real. Um campo, um documento.

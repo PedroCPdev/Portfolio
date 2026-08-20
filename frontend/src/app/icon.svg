@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="PedroCPDev">
+  <!-- Cor por seletor de classe, não por custom property. A geometria é a do
+       icon-brackets.svg original; só a técnica de pintura mudou. Rasterizador fora do
+       navegador (librsvg, que é o que o ImageMagick e vários crawlers usam) não resolve
+       custom property: com var() ele descartava fill e stroke e o ícone saía como um
+       quadrado preto sólido, sem o P entre chevrons. Classe com @media funciona no
+       navegador e no rasterizador. Os atributos de apresentação repetem a cor do tema
+       claro como último fallback, para quem ignorar o bloco de estilo inteiro. -->
+  <style>
+    .bg { fill: #000000; }
+    .fg { fill: #FFFFFF; }
+    .edge { fill: none; stroke: #FFFFFF; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #FFFFFF; }
+      .fg { fill: #000000; }
+      .edge { stroke: #000000; }
+    }
+  </style>
+  <rect class="bg" width="64" height="64" rx="14" fill="#000000"/>
+  <path class="edge" d="M15 23 L8.5 32 L15 41" fill="none" stroke="#FFFFFF" stroke-width="5.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="edge" d="M49 23 L55.5 32 L49 41" fill="none" stroke="#FFFFFF" stroke-width="5.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(7.6 7.4) scale(0.77)">
+    <path class="fg" fill="#FFFFFF" fill-rule="evenodd"
+          d="M18 14 H34 a11 11 0 0 1 0 22 H26 V50 H18 Z
+             M26 21 H34 a4 4 0 0 1 0 8 H26 Z"/>
+  </g>
+</svg>

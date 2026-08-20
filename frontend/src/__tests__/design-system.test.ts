@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -235,5 +235,62 @@ describe("PD-01 contrato de decisões no frontend", () => {
 
   it("api.ts expõe getProject para a página de detalhe", () => {
     expect(read("src/lib/api.ts")).toMatch(/export async function getProject\(/);
+  });
+});
+
+// PS-01 — o texto de posicionamento não recorta o autor por stack. O fato técnico continua
+// vivo onde é fato (tags dos projetos, lista Core, rodapé); o que saiu foi o rótulo.
+describe("PS-01 posicionamento sem recorte de stack", () => {
+  const STACK = /C#|\.NET|ASP\.NET|\bbackend\b/i;
+
+  it("o metadata se apresenta como software engineer, sem nomear stack", () => {
+    const layout = read("src/app/layout.tsx");
+    const meta = layout.slice(layout.indexOf("export const metadata"), layout.indexOf("export default"));
+    expect(meta, `metadata ainda recorta por stack:\n${meta}`).not.toMatch(STACK);
+    expect(meta.toLowerCase()).toContain("software engineer");
+  });
+
+  it("o hero não nomeia stack em lugar nenhum", () => {
+    const hero = read("src/components/Hero.tsx");
+    expect(hero, "o hero ainda nomeia uma stack").not.toMatch(STACK);
+  });
+
+  it("o parágrafo de abertura do About não nomeia stack", () => {
+    const about = read("src/components/About.tsx");
+    const prose = about.match(/<p className="measure[\s\S]*?<\/p>/)?.[0] ?? "";
+    expect(prose, "não achei o parágrafo de abertura do About").not.toBe("");
+    expect(prose, `o parágrafo ainda recorta por stack:\n${prose}`).not.toMatch(STACK);
+  });
+
+  it("o convite do contato é aberto a qualquer stack", () => {
+    const contact = read("src/components/Contact.tsx");
+    expect(contact, "o contato ainda restringe a uma stack").not.toMatch(STACK);
+  });
+
+  // A contrapartida: tirar o rótulo não pode virar apagar o fato. A lista de tecnologias
+  // é o lugar honesto do .NET, e é ela que evita a página ficar vaga.
+  it("mantém .NET na lista de tecnologias, onde é fato e não rótulo", () => {
+    const about = read("src/components/About.tsx");
+    expect(about, "o .NET sumiu também da lista Core").toContain('name: ".NET"');
+  });
+});
+
+// PS-02 — a aba do navegador carrega o ícone do site, não o do framework.
+describe("PS-02 ícone do site", () => {
+  it("serve um icon.svg pela convenção de arquivo do app router", () => {
+    expect(existsSync(join(ROOT, "src/app/icon.svg")), "src/app/icon.svg não existe").toBe(true);
+  });
+
+  it("o favicon padrão do Next não sobrevive no repositório", () => {
+    expect(
+      existsSync(join(ROOT, "src/app/favicon.ico")),
+      "favicon.ico ainda existe e concorre com o icon.svg no <head>",
+    ).toBe(false);
+  });
+
+  it("o ícone é o brackets e se adapta ao tema do navegador", () => {
+    const svg = read("src/app/icon.svg");
+    expect(svg).toContain("prefers-color-scheme: dark");
+    expect(svg, "o ícone precisa de rótulo acessível").toContain('aria-label="PedroCPDev"');
   });
 });

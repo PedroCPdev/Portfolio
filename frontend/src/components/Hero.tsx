@@ -5,8 +5,8 @@ export default function Hero() {
     <section className="border-t border-rule">
       <div className="shell grid gap-x-10 gap-y-6 pt-16 pb-16 md:pt-24 md:pb-24 lg:grid-cols-[var(--spine)_1fr]">
         <div className="label flex flex-row gap-4 pt-3 lg:flex-col lg:gap-1.5 lg:text-right">
-          <span className="text-ink">Backend</span>
-          <span>C# · .NET</span>
+          <span className="text-ink">Software engineer</span>
+          <span>APIs · data · deploy</span>
           <span>Brasil</span>
         </div>
 
@@ -23,9 +23,10 @@ export default function Hero() {
           </h1>
 
           <p className="measure mt-7 text-[1.0625rem] leading-relaxed text-ink-dim">
-            Backend engineer working in C# and .NET. The API serving this page is one of mine —
-            it sleeps on a free tier, wakes up in about a minute, and I decided that was worth
-            it. Open any project to read the decisions behind it.
+            I work where a system has to keep standing — APIs, data, deploy — and the language
+            is whichever one the problem is already written in. The API serving this page is one
+            of mine: it sleeps on a free tier, wakes up in about a minute, and I decided that was
+            worth it. Open any project to read the decisions behind it.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3">

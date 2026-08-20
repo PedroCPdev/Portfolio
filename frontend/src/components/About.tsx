@@ -26,11 +26,11 @@ export default function About() {
     <Section id="about" rail={<span>Profile</span>} title="How I work">
       <div className="flex flex-col gap-10">
         <p className="measure m-0 text-ink-dim">
-          I maintain and build .NET services — the kind that sit behind something else and
-          are only noticed when they stop. Most of what I do is deciding which constraint to
-          accept: a free tier that sleeps, a database without joins, a seed that fails without
-          taking the process down with it. I write those decisions down, including the ones
-          that aged badly.
+          I build and maintain services — the kind that sit behind something else and are only
+          noticed when they stop. Most of what I do is deciding which constraint to accept: a
+          free tier that sleeps, a database without joins, a seed that fails without taking the
+          process down with it. None of that changes with the language, and neither does the
+          habit of writing the decision down — including the ones that aged badly.
         </p>
 
         <div>

@@ -24,9 +24,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pedro Chasci Puga — backend engineer",
+  title: "Pedro Chasci Puga — software engineer",
   description:
-    "Backend engineer working in C# and .NET. Every project here is listed with the trade-off it cost.",
+    "Software engineer building systems that have to keep running. Every project here is listed with the trade-off it cost.",
 };
 
 export default function RootLayout({
