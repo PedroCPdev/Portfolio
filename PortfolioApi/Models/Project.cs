@@ -20,6 +20,15 @@ public class Project
     [FirestoreProperty("description")]
     public string Description { get; set; } = string.Empty;
 
+    /// <summary>
+    /// O que a decisão por trás do projeto custou — a contraparte de <see cref="Description"/>,
+    /// que conta o que foi ganho. Opcional por construção: o Firestore é schemaless e os
+    /// documentos gravados antes deste campo existir leem como null, caso em que o ledger do
+    /// frontend não renderiza a linha de custo.
+    /// </summary>
+    [FirestoreProperty("tradeoff")]
+    public string? Tradeoff { get; set; }
+
     [FirestoreProperty("tags")]
     public string[] Tags { get; set; } = [];
 

@@ -141,6 +141,68 @@ public class FirestoreProjectStoreTests : IClassFixture<FirestoreFixture>
         Assert.Equal(1, await store.CountAsync());
     }
 
+    // TR-01: o custo do trade-off sobrevive à ida e volta no Firestore
+    [Fact]
+    public async Task AddAsync_faz_round_trip_do_tradeoff()
+    {
+        var store = _fixture.NewStore(out _);
+        var project = NewProject("com custo", DateTime.UtcNow);
+        project.Tradeoff = "Sem SQL, sem joins, sem migrations versionadas.";
+
+        var id = await store.AddAsync(project);
+
+        var found = await store.GetByIdAsync(id);
+        Assert.NotNull(found);
+        Assert.Equal("Sem SQL, sem joins, sem migrations versionadas.", found!.Tradeoff);
+    }
+
+    // TR-01: campo ausente é legítimo — o ledger degrada sem ele
+    [Fact]
+    public async Task AddAsync_sem_tradeoff_devolve_null()
+    {
+        var store = _fixture.NewStore(out _);
+
+        var id = await store.AddAsync(NewProject("sem custo", DateTime.UtcNow));
+
+        var found = await store.GetByIdAsync(id);
+        Assert.NotNull(found);
+        Assert.Null(found!.Tradeoff);
+    }
+
+    // TR-02: o Firestore é schemaless, então os documentos que já estão em produção não têm a
+    // chave `tradeoff`. Este teste grava um documento cru sem ela — como se tivesse sido escrito
+    // antes do campo existir — e prova que a leitura não estoura. É o único risco real da mudança.
+    [Fact]
+    public async Task GetAllAsync_le_documento_gravado_antes_do_campo_existir_sem_lancar()
+    {
+        var store = _fixture.NewStore(out var collection);
+        await _fixture.Db.Collection(collection).AddAsync(new Dictionary<string, object>
+        {
+            ["title"] = "documento legado",
+            ["description"] = "gravado antes de tradeoff existir",
+            ["tags"] = new[] { "C#" },
+            ["createdAt"] = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+        });
+
+        var all = await store.GetAllAsync();
+
+        var legacy = Assert.Single(all);
+        Assert.Equal("documento legado", legacy.Title);
+        Assert.Null(legacy.Tradeoff);
+    }
+
+    // TR-04: o seed é a única fonte de exemplo do ledger para quem sobe o projeto do zero
+    [Fact]
+    public async Task SeedAsync_semeia_projetos_com_tradeoff_preenchido()
+    {
+        var store = _fixture.NewStore(out _);
+
+        await DataSeeder.SeedAsync(store, NullLogger.Instance);
+
+        var all = await store.GetAllAsync();
+        Assert.All(all, p => Assert.False(string.IsNullOrWhiteSpace(p.Tradeoff)));
+    }
+
     [Fact]
     public async Task CountAsync_reflete_quantidade_de_documentos()
     {

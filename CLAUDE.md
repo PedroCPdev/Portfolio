@@ -57,7 +57,7 @@ Endpoints are grouped in `Endpoints/` as static classes with `Map*Endpoints(this
 
 Firestore document ids are **strings** (20 chars), so `Project.Id` is a `string` and the route is `/{id}`, not `/{id:int}`. `Project.CreatedAt` normalizes any `DateTimeKind` to UTC in its setter — Firestore throws `ArgumentException` on non-UTC `DateTime`. `Services/EmailService.cs` sends through the Resend HTTP API; `POST /api/contact` validates, sends, and is rate-limited to 3 requests/min. When the `Email` section is not configured (`IsConfigured` false) it degrades silently — it logs and reports success without sending.
 
-`Models/` are plain classes with no separate DTOs — API responses serialize them directly (see `Project`, `ContactMessage`). `Project` carries Firestore mapping attributes (`[FirestoreData]`, `[FirestoreProperty]`, `[FirestoreDocumentId]`); `ContactMessage` is never persisted.
+`Models/` are plain classes with no separate DTOs — API responses serialize them directly (see `Project`, `ContactMessage`). `Project.Tradeoff` (JSON `tradeoff`) is the cost half of the frontend's trade-off ledger and is **optional by construction**: Firestore is schemaless, so documents written before the field existed simply lack the key and read back as null, and the ledger omits the cost line rather than rendering an empty one. `Project` carries Firestore mapping attributes (`[FirestoreData]`, `[FirestoreProperty]`, `[FirestoreDocumentId]`); `ContactMessage` is never persisted.
 
 ### Frontend (`frontend/`)
 Next.js App Router. `src/app/page.tsx` composes section components in fixed order (`Navbar`, `Hero`, `About`, `Projects`, `Contact`) inside a single-page layout; sections are anchored via `id` for in-page nav.

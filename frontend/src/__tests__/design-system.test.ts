@@ -153,6 +153,13 @@ describe("DR-05 trade-off ledger", () => {
     expect(projects).toMatch(/cost=\{project\.tradeoff\}/);
   });
 
+  // TR-05: `tradeoff` passou a existir no contrato de /api/projects, então o alias local que
+  // estendia o tipo não tem mais razão de ser — manter os dois é como as duas definições divergem.
+  it("lê tradeoff do tipo de api.ts, sem alias local", () => {
+    expect(read("src/lib/api.ts")).toMatch(/tradeoff\?:\s*string/);
+    expect(read("src/components/Projects.tsx")).not.toContain("ProjectRecord");
+  });
+
   it("reserva clay a custo e erro — nenhum outro componente o usa", () => {
     const ALLOWED = new Set(["Ledger.tsx", "ContactForm.tsx"]);
     const offenders = sourceFiles()

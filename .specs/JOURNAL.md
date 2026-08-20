@@ -5,6 +5,47 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Campo `tradeoff` no contrato: API, Firestore e frontend
+
+O trade-off ledger passou a ter as duas metades. `Project.Tradeoff` existe no model, é gravado e
+lido do Firestore, sai como `tradeoff` no JSON de `GET /api/projects`, e o frontend deixou de
+estender o tipo localmente. O seed carrega um custo real em cada projeto de exemplo.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `PortfolioApi/Models/Project.cs` | modificado | `Tradeoff` opcional (`:30`), posicionado junto de `Description` porque são as duas metades do mesmo par |
+| `PortfolioApi/Services/DataSeeder.cs` | modificado | custo real nos dois projetos semeados — é a única fonte de exemplo do ledger para quem sobe do zero |
+| `PortfolioApi.Tests/FirestoreProjectStoreTests.cs` | modificado | round-trip, ausência, documento legado sem a chave, e seed com custo |
+| `PortfolioApi.Tests/ProjectContractTests.cs` | criado | trava o nome `tradeoff` no JSON; sem DTO (C-4), renomear a propriedade muda o contrato calado |
+| `frontend/src/lib/api.ts` | modificado | `tradeoff?: string` no tipo `Project` |
+| `frontend/src/components/Projects.tsx` | modificado | alias `ProjectRecord` removido: o campo agora vem do contrato de verdade |
+| `frontend/src/__tests__/design-system.test.ts` | modificado | asserção TR-05: o alias local não pode voltar |
+| `.specs/features/project-tradeoff-field/` | criado | spec TR-01..TR-05 com matriz e o risco coberto pelo TR-02 |
+| `.specs/codebase/TESTING.md` | modificado | contagem do gate `full` estava em 17 e agora são 40; seção nova sobre os testes que rodam sem emulador |
+| `CLAUDE.md` | modificado | `Tradeoff` é opcional por construção — documento antigo sem a chave lê como null |
+
+**Sem migration, e o risco não é esse.** O Firestore é schemaless: o campo novo não exige DDL nem
+backfill, e nenhum dado de produção foi tocado. O risco real é o inverso — os documentos que já
+estão lá **não têm** a chave `tradeoff`, e se `ConvertTo<Project>()` estourasse com ela ausente,
+`GET /api/projects` quebraria inteiro no primeiro deploy. Um teste que grava e lê pelo próprio
+model nunca pegaria isso, porque o model sempre grava a chave. Por isso
+`FirestoreProjectStoreTests.cs:176` escreve um documento **cru**, via dicionário, sem a chave, e
+prova que a leitura devolve null sem lançar.
+
+**Verificado ponta a ponta, não só em unitário.** Com o emulador no ar, a API real subiu contra
+ele, o seed rodou, `GET /api/projects` devolveu `"tradeoff"` em camelCase nos dois documentos, e o
+frontend renderizou as duas linhas de custo. A coleção usada no e2e foi `projects_e2e_tradeoff`,
+no emulador — produção intacta.
+
+**Não toquei:** os documentos de produção continuam sem `tradeoff`, então em
+`pedrocpdev.vercel.app` o ledger segue mostrando só a linha "Kept" até você preencher o campo no
+console do Firebase. Isso é escrita em dado real e é decisão sua, não minha. Não criei endpoint de
+escrita nem painel admin (fora de escopo no nível projeto). Não tornei o campo obrigatório.
+
+**Gate:** `dotnet test PortfolioApi.Tests` → 18 passed (com emulador) · `npx vitest run` → 22 passed ·
+`npx eslint .` → exit 0 · `npm run build` → compiled successfully.
+
+
 ## 2026-08-20 — Redesign visual do frontend: "The Decision Record"
 
 O portfólio deixou de parecer template de dev. A página passou a ter a forma do artefato que

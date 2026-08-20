@@ -4,6 +4,9 @@ export interface Project {
   id: string;
   title: string;
   description: string;
+  /** O que a decisão por trás do projeto custou. Opcional: documentos gravados antes do
+   *  campo existir vêm sem ele, e o ledger não renderiza a linha de custo. */
+  tradeoff?: string;
   tags: string[];
   githubUrl?: string;
   liveUrl?: string;

@@ -4,13 +4,9 @@ import { getProjects, Project } from "@/lib/api";
 import { FaGithub } from "react-icons/fa";
 import { FiExternalLink } from "react-icons/fi";
 
-// `tradeoff` ainda não existe no contrato de /api/projects. Estendo o tipo aqui em vez de
-// tocar em src/lib/api.ts: o card renderiza o ledger quando o campo vier, e sem ele quando não.
-type ProjectRecord = Project & { tradeoff?: string };
-
 // O trilho carrega o ano do registro, nao um ordinal decorativo: a ordem da lista nao
 // significa nada para quem le, a data significa (DR-06).
-function ProjectCard({ project }: { project: ProjectRecord }) {
+function ProjectCard({ project }: { project: Project }) {
   const year = new Date(project.createdAt).getUTCFullYear();
   return (
     <article className="border-t border-rule py-10 first:border-t-0 first:pt-0">
@@ -66,7 +62,7 @@ function ProjectCard({ project }: { project: ProjectRecord }) {
 }
 
 export default async function Projects() {
-  const projects: ProjectRecord[] = await getProjects();
+  const projects = await getProjects();
 
   return (
     <Section id="work" rail={<span>Work</span>} title="Selected records">
