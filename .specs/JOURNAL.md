@@ -5,6 +5,37 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Mais decisões e tags do Portfolio API em produção (dado real)
+
+Segunda operação em dado real. Os dois projetos foram de 3 para 5 decisões, e as tags do
+Portfolio API deixaram de anunciar detalhe interno. Nenhum arquivo de aplicação foi tocado.
+
+| Alvo | Ação | Por quê |
+|---|---|---|
+| `projects/kBo99k1ss9KSRJCK8HrY` (Portfolio API) | +2 decisões (AD-002, AD-004/L-006) e `tags` reescritas | `NoSQL` e `Scalar` são detalhe interno; `Docker`, `Render` e `Minimal API` são o que o projeto demonstra |
+| `projects/R9ZGZNOdNpZtYWkYWnTN` (Portfolio Frontend) | +2 decisões (AD-008, AD-009) | as decisões desta sessão não estavam no site |
+
+**Interpretação assumida.** "as que tomamos" foi lido como *as `AD-NNN` do `STATE.md` que ainda
+não estavam publicadas* — inclusive as desta sessão. Produção já tinha 3 decisões em cada projeto
+quando o pedido chegou, verificado por leitura antes de escrever, então "está sem decisões" não
+podia ser literal.
+
+**Acrescenta, não substitui.** O script lê as decisões existentes e escreve
+`[...existentes, ...novas]`, preservando ordem. Um `PATCH` com a lista nova sozinha teria apagado
+as três anteriores — o array é substituído inteiro, não mesclado, e essa é a armadilha do
+`updateMask` em campo de array.
+
+**Rollback:** `scratchpad/dump-prod-2026-08-20175305.json`, tirado imediatamente antes.
+
+**Verificado no site público, não só no banco:** as 5 decisões e as tags novas aparecem em
+`pedrocpdev.vercel.app/projects/kBo99k1ss9KSRJCK8HrY`, cerca de 30s após a escrita — o ISR de 60s
+virou sozinho, sem redeploy.
+
+**Não toquei:** as tags do Portfolio Frontend (`TypeScript, Next.js, React, Tailwind CSS`), que não
+foram pedidas e não têm o mesmo problema; a `description` do Frontend; e o documento do
+"Keep-alive scheduler", que segue inexistente em produção.
+
+
 ## 2026-08-20 — Backfill de `decisions` em produção (dado real)
 
 Operação em dado real, autorizada pelo usuário depois de dump e revisão do conteúdo.
