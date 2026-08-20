@@ -6,7 +6,7 @@ import Contact from "@/components/Contact";
 
 export default function Home() {
   return (
-    <div className="max-w-5xl mx-auto w-full flex flex-col min-h-screen">
+    <div id="top" className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1">
         <Hero />
@@ -14,8 +14,11 @@ export default function Home() {
         <Projects />
         <Contact />
       </main>
-      <footer className="py-8 px-10 border-t-[0.5px] border-[#5ba0f5]/8 text-center text-[11px] text-[#e8f0fe]/15 font-mono">
-        Pedro Chasci Puga © 2026 — built with next.js + c#
+      <footer className="border-t border-rule">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-6 py-8 font-mono text-[0.6875rem] text-ink-dim md:px-10">
+          <span>Pedro Chasci Puga — 2026</span>
+          <span>Next.js frontend · ASP.NET Core API · Firestore</span>
+        </div>
       </footer>
     </div>
   );

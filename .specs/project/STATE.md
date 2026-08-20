@@ -51,6 +51,21 @@ Memória persistente do projeto.
 - **Trade-off:** um endpoint a mais na superfície pública (sem dados, fora do OpenAPI).
 - **Impacto:** ping responde em ~9 ms mesmo com o Firestore fora do ar.
 
+### AD-007: Redesign visual "The Decision Record" — paleta em tokens
+- **Decisão:** substituir a paleta dark-navy hex-literal (`#050d1a`/`#0d1b2e`/`#5ba0f5`) por um
+  sistema de tokens em `globals.css` (oliva-grafite `--ground`, âmbar `--amber`, `--clay`), e
+  trocar Outfit por Bricolage Grotesque (display) + Newsreader (corpo) + JetBrains Mono (utilitário).
+- **Razão:** o design anterior era a soma dos tells de portfólio-template — `// hello world`,
+  `01/02/03` em seções que não são sequência, o mesmo card repetido 5×, nuvem de 19 tags com peso
+  idêntico. Não comunicava o que diferencia o Pedro: decidir e registrar o que a decisão custou.
+  A página passa a ter a forma dos próprios `AD-NNN`.
+- **Trade-off:** revoga a regra de `CONVENTIONS.md` que proibia cores novas e tokens temáticos —
+  regra que existia para dar consistência e que a paleta nova cumpre melhor via tokens. Serifa
+  (Newsreader) no escuro é risco de legibilidade assumido conscientemente. Toda a superfície visível
+  mudou de uma vez, então não há como comparar A/B com o design anterior em produção.
+- **Impacto:** 8 componentes reescritos, `SectionHeader` virou `Section` + `Ledger`. Nenhuma mudança
+  em `src/lib/api.ts`, no contrato de `/api/projects` ou na API .NET. Decidido em 2026-08-20 pelo usuário.
+
 ## Bloqueios (B-NNN)
 
 ### B-002: Service account do Firebase dentro do repositório — RESOLVIDO
@@ -120,6 +135,16 @@ Produção nunca foi afetada: o Render constrói a partir do clone do git, onde 
 ignorados, e lê a credencial de `Firestore__CredentialsJson`. O `.gitignore` sozinho **não**
 protege builds locais, porque o Docker lê do disco, não do git — daí o `PortfolioApi/.dockerignore`.
 
+### L-007: custom property é resolvida onde é DECLARADA, não onde é usada
+`next/font` expõe `--font-newsreader` numa classe que estava no `<body>`, enquanto os tokens do
+tema são declarados em `:root`. `--font-body: var(--font-newsreader), ...` em `:root` referencia um
+var que não existe naquele escopo → o token inteiro vira *invalid at computed-value time* → o
+`font-family` do body é descartado e a prosa cai no sans herdado do `html`.
+
+O que torna isso perigoso: **build, lint e testes ficam todos verdes**. Só aparece no pixel. Foi
+pego por screenshot, não por gate. Correção: as variáveis do `next/font` vão no `<html>`.
+Guardado por um teste de regressão em `design-system.test.ts`.
+
 ## Ideias Adiadas
 
 - **Vulnerabilidades restantes em devDependencies.** Depois do bump para Next 16.3.1,
@@ -133,3 +158,8 @@ protege builds locais, porque o Docker lê do disco, não do git — daí o `Por
   um campo quebra o contrato público sem aviso do compilador. (2026-08-18)
 - **Endpoints de escrita / painel admin** para cadastrar projetos sem abrir o console
   do Firebase. (2026-08-18)
+
+- **`CLAUDE.md:23` afirma "No test runner is configured in `package.json`" e está errado.**
+  O frontend tem vitest (`"test": "vitest run"`, vitest ^3.2.7) e `.specs/codebase/TESTING.md` já
+  documenta o gate corretamente. Achado durante o redesign; fora do escopo daquela tarefa, então
+  não foi corrigido junto. Uma linha para arrumar. (2026-08-20)

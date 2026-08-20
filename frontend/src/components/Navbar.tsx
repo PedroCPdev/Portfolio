@@ -1,22 +1,32 @@
-"use client";
+const items = [
+  { href: "#about", label: "About" },
+  { href: "#work", label: "Work" },
+  { href: "#contact", label: "Contact" },
+];
+
 export default function Navbar() {
   return (
-    <nav className="flex justify-between items-center py-[22px] px-4 sm:px-8 md:px-12 border-b-[0.5px] border-[#5ba0f5]/12 sticky top-0 bg-[#050d1a] z-50 w-full">
-      <span className="font-mono text-sm text-[#5ba0f5]">
-        PedroCPDev
-      </span>
-      <ul className="flex items-center list-none m-0 p-0 gap-1">
-        {["about", "projects", "contact"].map((item) => (
-          <li key={item}>
-            <a
-              href={`#${item}`}
-              className="block text-[12px] sm:text-[13px] text-[#e8f0fe]/45 no-underline tracking-[0.03em] transition-colors duration-200 hover:text-[#5ba0f5] px-2.5 sm:px-3.5 py-1"
-            >
-              {item}
-            </a>
-          </li>
-        ))}
-      </ul>
+    <nav className="sticky top-0 z-50 border-b border-rule bg-ground/95 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4 md:px-10">
+        <a
+          href="#top"
+          className="font-mono text-[0.8125rem] tracking-[0.02em] text-ink no-underline"
+        >
+          pedrocpdev
+        </a>
+        <ul className="m-0 flex list-none items-center gap-1 p-0">
+          {items.map(({ href, label }) => (
+            <li key={href}>
+              <a
+                href={href}
+                className="block px-3 py-1.5 font-mono text-[0.75rem] text-ink-dim no-underline transition-colors hover:text-amber"
+              >
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </nav>
   );
 }

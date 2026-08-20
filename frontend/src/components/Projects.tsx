@@ -1,74 +1,97 @@
-/* eslint-disable react/jsx-no-comment-textnodes */
-import SectionHeader from "./SectionHeader";
+import Section from "./Section";
+import Ledger from "./Ledger";
 import { getProjects, Project } from "@/lib/api";
 import { FaGithub } from "react-icons/fa";
 import { FiExternalLink } from "react-icons/fi";
 
-function ProjectCard({ project }: { project: Project }) {
+// `tradeoff` ainda não existe no contrato de /api/projects. Estendo o tipo aqui em vez de
+// tocar em src/lib/api.ts: o card renderiza o ledger quando o campo vier, e sem ele quando não.
+type ProjectRecord = Project & { tradeoff?: string };
+
+// O trilho carrega o ano do registro, nao um ordinal decorativo: a ordem da lista nao
+// significa nada para quem le, a data significa (DR-06).
+function ProjectCard({ project }: { project: ProjectRecord }) {
+  const year = new Date(project.createdAt).getUTCFullYear();
   return (
-    <div className="bg-[#0d1b2e] border-[0.5px] border-[#5ba0f5]/10 rounded-[10px] py-7 px-6 sm:px-8 flex flex-col gap-5">
-      <div>
-        <h3 className="text-sm font-medium text-[#e8f0fe] m-0 mb-1.5">
+    <article className="border-t border-rule py-10 first:border-t-0 first:pt-0">
+      <div className="min-w-0">
+        <p className="label m-0 mb-3 text-amber">
+          {Number.isNaN(year) ? "\u2014" : year}
+        </p>
+        <h3 className="m-0 font-display text-[1.375rem] font-semibold tracking-[-0.015em] text-ink">
           {project.title}
         </h3>
-        <p className="text-xs text-[#e8f0fe]/40 m-0 leading-relaxed">
-          {project.description}
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2.5">
-        {project.tags.map((tag) => (
-          <span
-            key={tag}
-            className="font-mono text-[10px] py-0.75 px-2 rounded bg-[#5ba0f5]/8 text-[#5ba0f5] border-[0.5px] border-[#5ba0f5]/18"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-      <div className="flex items-center gap-3.5 mt-auto">
-        {project.githubUrl && (
-          <a
-            href={project.githubUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-[#e8f0fe]/40 no-underline border-[0.5px] border-[#5ba0f5]/[0.14] py-1 px-3 rounded-md bg-[#050d1a] transition-colors hover:text-[#e8f0fe]"
-          >
-            <FaGithub size={12} />
-            GitHub
-          </a>
+
+        <div className="mt-5">
+          <Ledger kept={project.description} cost={project.tradeoff} />
+        </div>
+
+        <ul className="m-0 mt-6 flex list-none flex-wrap gap-x-4 gap-y-2 p-0">
+          {project.tags.map((tag) => (
+            <li key={tag} className="font-mono text-[0.75rem] text-ink-dim">
+              {tag}
+            </li>
+          ))}
+        </ul>
+
+        {(project.githubUrl || project.liveUrl) && (
+          <div className="mt-6 flex flex-wrap items-center gap-5">
+            {project.githubUrl && (
+              <a
+                href={project.githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 font-mono text-[0.8125rem] text-ink-dim no-underline transition-colors hover:text-ink"
+              >
+                <FaGithub size={13} aria-hidden />
+                Source
+              </a>
+            )}
+            {project.liveUrl && (
+              <a
+                href={project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 font-mono text-[0.8125rem] text-amber no-underline transition-colors hover:text-ink"
+              >
+                <FiExternalLink size={13} aria-hidden />
+                Live
+              </a>
+            )}
+          </div>
         )}
-        {project.liveUrl && (
-          <a
-            href={project.liveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-[#5ba0f5] no-underline border-[0.5px] border-[#5ba0f5]/30 py-1 px-3 rounded-md bg-[#5ba0f5]/6 transition-colors hover:bg-[#5ba0f5]/20"
-          >
-            <FiExternalLink size={12} />
-            Live
-          </a>
-        )}
       </div>
-    </div>
+    </article>
   );
 }
 
 export default async function Projects() {
-  const projects = await getProjects();
+  const projects: ProjectRecord[] = await getProjects();
+
   return (
-    <section id="projects" className="py-12 md:py-20 px-4 sm:px-8 md:px-12 border-t-[0.5px] border-[#5ba0f5]/8 w-full">
-      <SectionHeader number="02" title="Projects" />
+    <Section id="work" rail={<span>Work</span>} title="Selected records">
       {projects.length === 0 ? (
-        <p className="text-[13px] text-[#e8f0fe]/25 font-mono m-0 ml-1">
-          // no projects yet, but stay tuned! I&apos;m working on some exciting projects that will be showcased here soon.
+        <p className="m-0 max-w-[48ch] text-ink-dim">
+          The project list is served by the API behind this page, and it is not answering
+          right now. It runs on a free tier that sleeps — give it a minute and reload, or
+          read the source on{" "}
+          <a
+            href="https://github.com/PedroCPdev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-amber underline decoration-amber/40 underline-offset-4"
+          >
+            GitHub
+          </a>{" "}
+          in the meantime.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 w-full">
+        <div className="flex flex-col">
           {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
       )}
-    </section>
+    </Section>
   );
 }

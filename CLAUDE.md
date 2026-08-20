@@ -64,7 +64,9 @@ Next.js App Router. `src/app/page.tsx` composes section components in fixed orde
 
 `src/lib/api.ts` is the sole data-fetching boundary — typed `fetch` helpers against the API, using Next's `next: { revalidate: 60 }` for ISR. `Projects` (`src/components/Projects.tsx`) is an async server component that calls `getProjects()` directly; on fetch failure `getProjects` swallows the error and returns `[]`, and the component renders an empty-state message rather than an error. Because Render's free tier sleeps, `getProjects` retries network/timeout failures 3 times (15s each, 3s and 6s backoff, ~54s total) before giving up — HTTP 4xx/5xx is not retried. Budget for that when a call runs with the API down.
 
-Styling is Tailwind v4 with inline utility classes using a consistent dark-navy palette (`#050d1a`, `#0d1b2e`, accent `#5ba0f5`) rather than themed/token-based classes — match existing hex/opacity patterns (e.g. `text-[#e8f0fe]/40`) when adding UI rather than introducing new colors.
+Styling is Tailwind v4 over a token system declared in `src/app/globals.css` — dark olive-graphite ground (`--ground`), signal amber accent (`--amber`), and `--clay` reserved for trade-off cost lines and errors. Use the generated utilities (`bg-ground`, `text-amber`, `border-rule`); a literal hex in a component fails `src/__tests__/design-system.test.ts`. Type roles are fixed: `font-display` (Bricolage Grotesque) for headlines and titles, `font-body` (Newsreader) for prose, `font-mono` (JetBrains Mono) for ids, labels and tags.
+
+`next/font` variables live on `<html>`, not `<body>` — the theme tokens are declared on `:root`, and a custom property resolves where it is *declared*. Putting the font variables on `<body>` makes `--font-body` reference a `--font-newsreader` that does not exist at `:root`, so it becomes invalid and prose silently falls back to the default sans, with build, lint and tests all still green.
 
 ### Cross-cutting
 CORS is locked to a single allowed origin read from API config (`AllowedOrigins`) — update both `appsettings.json`/environment config and the frontend's `NEXT_PUBLIC_API_URL` together when changing where either side is hosted.

@@ -1,56 +1,68 @@
-import SectionHeader from "./SectionHeader";
-import { SiDotnet, SiSharp, SiPostgresql, SiReact, SiDocker, SiAngular, SiGit } from "react-icons/si";
+import Section from "./Section";
+import { SiSharp, SiDotnet, SiPostgresql, SiDocker, SiFirebase, SiAngular } from "react-icons/si";
 import { IconType } from "react-icons";
 
-const tagIcons: Record<string, IconType> = {
-  "C#": SiSharp,
-  ".NET": SiDotnet,
-  "AngularJS": SiAngular,
-  "PostgreSQL": SiPostgresql,
-  "Git": SiGit,
-  "Docker": SiDocker,
-  "React": SiReact,
-};
+// DR-11 — hierarquia em vez de nuvem plana. O núcleo é o que se defende numa entrevista;
+// o resto é contexto e vem com peso visual menor, não igual.
+const core: { name: string; icon?: IconType }[] = [
+  { name: "C#", icon: SiSharp },
+  { name: ".NET", icon: SiDotnet },
+  { name: "ASP.NET Core" },
+  { name: "PostgreSQL", icon: SiPostgresql },
+  { name: "Firestore", icon: SiFirebase },
+  { name: "Docker", icon: SiDocker },
+];
 
-const tags = ["C#", ".NET", "Oracle", "EF Core", "AngularJS", "PostgreSQL", "Git", "Docker", "Azure", "Agile", "Scrum", "TDD", "Clean Code", "DDD", "Microservices", "CI/CD", "Unit Testing", "Integration Testing", "Performance Optimization"];
+const alsoUsed: { name: string; icon?: IconType }[] = [
+  { name: "Oracle" },
+  { name: "EF Core" },
+  { name: "AngularJS", icon: SiAngular },
+  { name: "Azure" },
+  { name: "CI/CD" },
+];
 
 export default function About() {
   return (
-    <section id="about" className="py-12 md:py-20 px-4 sm:px-8 md:px-12 border-t-[0.5px] border-[#5ba0f5]/8 w-full">
-      <SectionHeader number="01" title="About me" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 w-full">
-        <div className="bg-[#0d1b2e] border-[0.5px] border-[#5ba0f5]/10 rounded-[10px] py-6 px-6 flex flex-col gap-3.5">
-          <p className="text-[11px] text-[#e8f0fe]/30 uppercase tracking-[0.08em] mb-2.5">
-            Current main role
-          </p>
-          <p className="text-sm text-[#c8d8f0] leading-relaxed m-0">
-            <span className="font-mono text-[13px] text-[#5ba0f5]">.NET</span> Software Developer
-            <br />
-            <span className="text-xs text-[#e8f0fe]/[0.28]">
-              maintenance and development of .NET, Oracle and AngularJS applications
-            </span>
-          </p>
+    <Section id="about" rail={<span>Profile</span>} title="How I work">
+      <div className="flex flex-col gap-10">
+        <p className="m-0 max-w-[58ch] text-ink-dim">
+          I maintain and build .NET services — the kind that sit behind something else and
+          are only noticed when they stop. Most of what I do is deciding which constraint to
+          accept: a free tier that sleeps, a database without joins, a seed that fails without
+          taking the process down with it. I write those decisions down, including the ones
+          that aged badly.
+        </p>
+
+        <div>
+          <p className="label m-0 mb-4">Core</p>
+          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+            {core.map(({ name, icon: Icon }) => (
+              <li
+                key={name}
+                className="inline-flex items-center gap-2 rounded-sm border border-amber/25 bg-amber/[0.07] px-3 py-1.5 font-mono text-[0.8125rem] text-amber"
+              >
+                {Icon && <Icon size={13} aria-hidden />}
+                {name}
+              </li>
+            ))}
+          </ul>
         </div>
-        <div className="bg-[#0d1b2e] border-[0.5px] border-[#5ba0f5]/10 rounded-[10px] py-6 px-6 flex flex-col gap-3.5">
-          <p className="text-[11px] text-[#e8f0fe]/30 uppercase tracking-[0.08em] mb-2.5">
-            Main technologies
-          </p>
-          <div className="flex flex-wrap gap-2.5 mt-1.5">
-            {tags.map((tag) => {
-              const Icon = tagIcons[tag];
-              return (
-                <span
-                  key={tag}
-                  className="font-mono text-[10px] py-0.75 px-2 rounded bg-[#5ba0f5]/8 text-[#5ba0f5] border-[0.5px] border-[#5ba0f5]/18 inline-flex items-center gap-1"
-                >
-                  {Icon && <Icon size={10} />}
-                  {tag}
-                </span>
-              );
-            })}
-          </div>
+
+        <div>
+          <p className="label m-0 mb-4">Also worked with</p>
+          <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-2 p-0">
+            {alsoUsed.map(({ name, icon: Icon }) => (
+              <li
+                key={name}
+                className="inline-flex items-center gap-1.5 font-mono text-[0.75rem] text-ink-dim"
+              >
+                {Icon && <Icon size={11} aria-hidden />}
+                {name}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-    </section>
+    </Section>
   );
 }

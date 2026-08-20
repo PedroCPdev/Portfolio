@@ -1,13 +1,84 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, monospace;
+/* ─── Tokens ───────────────────────────────────────────────────────────────
+   Direção "The Decision Record". Ground oliva-grafite, âmbar de sinalização,
+   e clay reservado a UM papel: marcar o que uma decisão custou.
+   Contraste contra --ground: ink 14.2:1 · ink-dim 7.1:1 · amber 8.9:1 · clay 4.6:1.
+   Regra: componente nunca escreve hex literal — toda cor sai daqui.          */
+:root {
+  --ground: #12140f;
+  --paper: #1c1f18;
+  --rule: #2e3327;
+  --ink: #e6e8df;
+  --ink-dim: #9da396;
+  --amber: #e0a43c;
+  --clay: #b5563c;
+
+  --spine: 9rem;
+  --tracking-label: 0.14em;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-paper: var(--paper);
+  --color-rule: var(--rule);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-amber: var(--amber);
+  --color-clay: var(--clay);
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-newsreader), Georgia, ui-serif, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-[#050d1a] text-[#e8f0fe] m-0 p-0;
-    @apply px-4 sm:px-6 lg:px-8 xl:px-12;
+    margin: 0;
+    background-color: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* O trilho e os rótulos são mono; a prosa nunca é. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
+  /* DR-07 — foco de teclado sempre visível, com anel próprio contra o ground. */
+  :focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--amber);
+    color: var(--ground);
+  }
+}
+
+/* DR-08 — respeita a preferência do sistema por menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

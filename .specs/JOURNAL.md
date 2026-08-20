@@ -5,6 +5,59 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-20 — Redesign visual do frontend: "The Decision Record"
+
+O portfólio deixou de parecer template de dev. A página passou a ter a forma do artefato que
+melhor representa o Pedro como engenheiro — o registro de decisão com o custo declarado — com
+paleta em tokens (oliva-grafite + âmbar + clay), três famílias tipográficas com papéis fixos,
+spine assimétrico e o *trade-off ledger* como elemento-assinatura. Nenhuma linha de
+`src/lib/api.ts`, do contrato de `/api/projects` ou da API .NET foi tocada.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `frontend/src/app/globals.css` | modificado | os 7 tokens de cor, os 3 stacks de fonte, `:focus-visible:60` e o bloco `prefers-reduced-motion:73` — a fundação de que todo componente depende |
+| `frontend/src/app/layout.tsx` | modificado | troca Outfit por Bricolage + Newsreader + JetBrains; variáveis do `next/font` no `<html>` (L-007) |
+| `frontend/src/app/page.tsx` | modificado | container sai do wrapper e vai para cada seção, para as bordas irem de ponta a ponta; footer reescrito |
+| `frontend/src/components/Section.tsx` | criado | primitiva do spine: dono único do grid e do espaçamento, para as seções não definirem padding próprio e brigarem entre si |
+| `frontend/src/components/Ledger.tsx` | criado | o elemento-assinatura; extraído porque Hero e Projects usam o mesmo par decisão/custo |
+| `frontend/src/components/SectionHeader.tsx` | removido | existia para renderizar o ordinal `01/02/03` de seções que não são sequência |
+| `frontend/src/components/Hero.tsx` | modificado | tese no lugar do cargo genérico, e o AD-001 real logo abaixo como prova imediata |
+| `frontend/src/components/About.tsx` | modificado | nuvem de 19 tags vira Core (6, com peso) + Also worked with (5, discreto) |
+| `frontend/src/components/Projects.tsx` | modificado | cards viram registros com ledger; `tradeoff` estendido localmente para não tocar em `api.ts`; estado vazio vira convite |
+| `frontend/src/components/Contact.tsx` | modificado | copy e links no vocabulário novo; Instagram removido do conjunto profissional |
+| `frontend/src/components/ContactForm.tsx` | modificado | labels reais em vez de placeholder como rótulo, `aria-live` no status, e o verbo sobrevive até a confirmação |
+| `frontend/src/components/Navbar.tsx` | modificado | sentence case e tokens; `Projects` vira `Work` para casar com a seção |
+| `frontend/src/__tests__/design-system.test.ts` | criado | 16 invariantes mecânicas do sistema de design |
+| `.specs/features/visual-decision-record/` | criado | spec (DR-01..DR-11), design e tarefas da feature |
+| `.specs/codebase/CONVENTIONS.md` | modificado | a regra antiga proibia literalmente o que o AD-007 decidiu fazer |
+| `.specs/project/STATE.md` | modificado | AD-007 (a decisão e o que ela custou), L-007 e uma ideia adiada |
+| `CLAUDE.md` | modificado | descrevia a paleta dark-navy que deixou de existir |
+
+**O gate não pega design, e quase escondeu um bug.** Com as variáveis do `next/font` no
+`<body>`, `--font-body` (declarado em `:root`) referenciava um `--font-newsreader` que não existe
+naquele escopo. O token virava inválido, o `font-family` do body era descartado, e toda a prosa
+caía no sans padrão — com **build, lint e 21 testes verdes**. Só apareceu ao olhar o pixel. Está
+em L-007, e `design-system.test.ts:60` guarda a correção.
+
+**Reserva do clay.** `--clay` só pode aparecer na linha de custo do ledger e em mensagem de erro.
+Não é convenção escrita torcendo para ser seguida: `design-system.test.ts:156` falha se qualquer
+outro componente usar. É o que impede o acento de virar decoração e a assinatura de se diluir.
+
+**Evidência, sem inflar:** 21/21 testes, lint 0, build ok. Mas DR-04 (spine) e DR-11 (hierarquia
+de tecnologias) são composição visual e o gate **não** os cobre — não há jsdom no projeto.
+Estão marcados na matriz como *verificado por inspeção*, com screenshot em 1440px e 390px.
+
+**Não toquei:** `src/lib/api.ts`, o contrato de `/api/projects` e a API .NET inteira — o campo
+`tradeoff` é opcional e estendido no componente, então nenhum projeto existente quebra e o
+ledger simplesmente não renderiza o bloco de custo quando o campo não vem. Não adicionei
+`@testing-library`/`jsdom` (fora de escopo). Não corrigi `CLAUDE.md:23` ("No test runner is
+configured"), que é falso desde que o vitest entrou — está registrado em Ideias Adiadas.
+`frontend/AGENTS.md` e `frontend/CLAUDE.md`, gerados pelo `next dev`, ficaram fora do commit.
+
+**Gate:** `npx vitest run` → 21 passed (2 files) · `npx eslint .` → exit 0 ·
+`npm run build` → compiled successfully, 4/4 páginas estáticas.
+
+
 ## 2026-08-18 — Backlog da auditoria de segurança registrado em CONCERNS.md
 
 Os achados da auditoria de segurança deixaram de existir só na conversa: viraram C-5..C-12 em
