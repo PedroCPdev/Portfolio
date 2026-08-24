@@ -42,3 +42,37 @@ janela de 16h existe para não estourar as 750 instance-hours/mês do free tier 
 suspenderia todos os serviços free até o mês seguinte. Nesse intervalo o primeiro acesso paga o
 cold start, absorvido pelo retry de `getProjects`, não pelo ping. O workflow também não vigia
 saúde: ele não avisa ninguém se a API responder erro.
+
+## Área administrativa (`/api/admin` + `/admin`)
+
+**Pré-requisito fora do repositório: `Admin__PasswordHash` e `Admin__JwtSigningKey` precisam
+existir no Render.** Sem as duas a área fica desligada — o login responde 401 e nenhuma escrita
+passa, de propósito (ADM-04). O `Program.cs` avisa no startup com
+`[Admin] Área administrativa DESLIGADA`.
+
+O que dispara: uma pessoa abrindo `/admin` no site e digitando a senha. `POST /api/admin/login`
+(`PortfolioApi/Endpoints/AdminEndpoints.cs`) confere a senha contra o hash PBKDF2 de
+`Admin__PasswordHash` e devolve um JWT HS256 de 8 horas, assinado com `Admin__JwtSigningKey`
+(mínimo 32 bytes). O painel guarda esse token em `sessionStorage` e o manda em `Authorization:
+Bearer` nas escritas — `POST`, `PUT` e `DELETE` de `/api/projects`, todas com
+`RequireAuthorization()`, validação de corpo e teto de 64 KB. A leitura (`GET`) continua anônima.
+O login aceita 5 tentativas por minuto no endpoint inteiro e responde 429 acima disso.
+
+O token é stateless de propósito: a instância do Render dorme e sobe zerada, e uma sessão em
+memória obrigaria a novo login a cada religamento. O preço é não haver logout do lado do
+servidor — um token vazado vale até expirar.
+
+Para saber que está vivo: entrar em `/admin` e ver a lista de projetos carregar. No log da API,
+`[Admin] Login concedido até ...` para sucesso e `[Admin] Tentativa de login com senha incorreta`
+para falha; se aparecer `Área administrativa DESLIGADA` no startup, falta configuração.
+
+Para mexer: trocar a senha é gerar outro hash com `dotnet run -- hash-password <senha>` e
+substituir `Admin__PasswordHash` no Render. **Trocar `Admin__JwtSigningKey` invalida na hora todos
+os tokens emitidos** — é o botão de revogação de emergência. A duração da sessão é
+`Admin:TokenLifetimeHours` (8h). Para desligar a área inteira, esvazie as duas variáveis.
+
+**O que a área administrativa não cobre:** salvar não atualiza o site na hora — a home usa ISR de
+60s (`next: { revalidate: 60 }`), então a mudança aparece em até um minuto. Não há upload de
+imagem (`imageUrl` é URL digitada), rascunho, histórico de versões, log de auditoria nem
+recuperação de senha: a senha esquecida se resolve gerando outro hash. E o rate limit do login é
+do endpoint, não por visitante (C-6) — quem esgotar a janela deixa o admin um minuto sem entrar.
