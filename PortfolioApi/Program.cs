@@ -9,7 +9,17 @@ using Microsoft.Extensions.Options;
 using Portfolio.Data;
 using Portfolio.Endpoints;
 using Portfolio.Services;
+using Portfolio.Auth;
 using Scalar.AspNetCore;
+
+// Gerador do valor de Admin__PasswordHash. Roda antes de qualquer coisa de servidor web e sai:
+// `dotnet run -- hash-password <senha>`. Existe para que a senha nunca precise passar por um
+// gerador de hash online para virar variável de ambiente (design D-3).
+if (args is ["hash-password", var senhaEmTextoPuro, ..])
+{
+    Console.WriteLine(AdminPasswordHasher.Hash(senhaEmTextoPuro));
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
