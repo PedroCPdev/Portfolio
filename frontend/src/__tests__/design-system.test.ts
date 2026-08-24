@@ -305,3 +305,31 @@ describe("PS-02 ícone do site", () => {
     expect(svg, "o ícone precisa de rótulo acessível").toContain('aria-label="PedroCPDev"');
   });
 });
+
+// ADM — o painel administrativo existe na Vercel, mas não faz parte da superfície pública.
+describe("ADM painel administrativo", () => {
+  it("declara noindex e nofollow no layout da rota", () => {
+    const layout = read("src/app/admin/layout.tsx");
+    expect(layout).toMatch(/robots:\s*\{/);
+    expect(layout).toMatch(/index:\s*false/);
+    expect(layout).toMatch(/follow:\s*false/);
+  });
+
+  // Um link para /admin numa página pública é o que transforma "rota discreta" em
+  // "rota anunciada" — inclusive para crawler que ignora o noindex.
+  it("não é linkado de nenhuma página ou componente público", () => {
+    const publicos = sourceFiles().filter(
+      (f) => !f.includes("/admin") && /\.tsx$/.test(f),
+    );
+    const offenders = publicos.filter((f) => /["'`]\/admin/.test(readFileSync(f, "utf8")));
+    expect(offenders, `link para /admin em: ${offenders.join(", ")}`).toEqual([]);
+  });
+
+  // O painel escreve; a vitrine lê com ISR. Um `revalidate` no cliente de escrita devolveria
+  // resposta velha logo depois de salvar.
+  it("o cliente de escrita não usa cache de ISR", () => {
+    const admin = read("src/lib/admin.ts");
+    expect(admin).not.toContain("revalidate");
+    expect(admin).toContain('cache: "no-store"');
+  });
+});
