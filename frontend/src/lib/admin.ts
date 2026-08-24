@@ -37,6 +37,29 @@ const SEM_RESPOSTA = 0;
 const temBrowser = () => typeof window !== "undefined";
 
 /**
+ * Assinantes da sessão. `sessionStorage` não dispara evento para a própria aba que escreveu,
+ * então quem quiser reagir a login e logout precisa ser avisado daqui.
+ */
+const ouvintes = new Set<() => void>();
+
+export function subscribeSession(ouvinte: () => void): () => void {
+  ouvintes.add(ouvinte);
+  return () => ouvintes.delete(ouvinte);
+}
+
+/**
+ * Instantâneo estável para `useSyncExternalStore`: devolve o token, não o objeto da sessão.
+ * Um objeto novo a cada leitura faria o React entender que o estado mudou sempre.
+ */
+export function getSessionToken(): string | null {
+  return getSession()?.token ?? null;
+}
+
+function notificar(): void {
+  for (const ouvinte of ouvintes) ouvinte();
+}
+
+/**
  * Sessão em `sessionStorage`, não em cookie httpOnly: o painel está num site (Vercel) e a API
  * noutro (Render), então o cookie seria third-party e é bloqueado pelo Safari e pelas proteções
  * do Chrome — o login funcionaria num navegador e falharia noutro (design D-12).
@@ -62,6 +85,7 @@ export function getSession(): AdminSession | null {
 
 export function logout(): void {
   if (temBrowser()) sessionStorage.removeItem(SESSION_KEY);
+  notificar();
 }
 
 export async function login(password: string): Promise<AdminResult<AdminSession>> {
@@ -74,6 +98,7 @@ export async function login(password: string): Promise<AdminResult<AdminSession>
   if (!resultado.ok) return resultado;
 
   if (temBrowser()) sessionStorage.setItem(SESSION_KEY, JSON.stringify(resultado.data));
+  notificar();
   // Um token que já nasce vencido não é sessão: getSession devolve null e limpa.
   const sessao = getSession();
   return sessao ? { ok: true, data: sessao } : { ok: false, status: SEM_RESPOSTA, error: "Session expired immediately. Check the clock on this machine." };
