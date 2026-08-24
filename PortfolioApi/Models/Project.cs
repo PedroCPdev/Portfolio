@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using Google.Cloud.Firestore;
+using Portfolio.Validation;
 
 namespace Portfolio.Models;
 
@@ -14,9 +16,15 @@ public class Project
     [FirestoreDocumentId]
     public string Id { get; set; } = string.Empty;
 
+    [Required(ErrorMessage = "Title is required.")]
+    [NotBlank(ErrorMessage = "Title cannot be blank.")]
+    [StringLength(120, ErrorMessage = "Title cannot exceed 120 characters.")]
     [FirestoreProperty("title")]
     public string Title { get; set; } = string.Empty;
 
+    [Required(ErrorMessage = "Description is required.")]
+    [NotBlank(ErrorMessage = "Description cannot be blank.")]
+    [StringLength(2000, ErrorMessage = "Description cannot exceed 2000 characters.")]
     [FirestoreProperty("description")]
     public string Description { get; set; } = string.Empty;
 
@@ -27,18 +35,28 @@ public class Project
     /// deste campo existir simplesmente não têm a chave, caso em que a leitura devolve lista
     /// vazia e quem consome faz `.map` direto, sem checar null.
     /// </summary>
+    [MaxLength(10, ErrorMessage = "A project cannot have more than 10 decisions.")]
+    [ValidateItems]
     [FirestoreProperty("decisions")]
     public Decision[] Decisions { get; set; } = [];
 
+    [MaxLength(12, ErrorMessage = "A project cannot have more than 12 tags.")]
+    [ValidateItems(MaxLength = 30)]
     [FirestoreProperty("tags")]
     public string[] Tags { get; set; } = [];
 
+    [StringLength(2048, ErrorMessage = "GithubUrl cannot exceed 2048 characters.")]
+    [RegularExpression(@"^https?://\S+$", ErrorMessage = "GithubUrl must be an http or https URL.")]
     [FirestoreProperty("githubUrl")]
     public string? GithubUrl { get; set; }
 
+    [StringLength(2048, ErrorMessage = "LiveUrl cannot exceed 2048 characters.")]
+    [RegularExpression(@"^https?://\S+$", ErrorMessage = "LiveUrl must be an http or https URL.")]
     [FirestoreProperty("liveUrl")]
     public string? LiveUrl { get; set; }
 
+    [StringLength(2048, ErrorMessage = "ImageUrl cannot exceed 2048 characters.")]
+    [RegularExpression(@"^https?://\S+$", ErrorMessage = "ImageUrl must be an http or https URL.")]
     [FirestoreProperty("imageUrl")]
     public string? ImageUrl { get; set; }
 
