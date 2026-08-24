@@ -254,4 +254,103 @@ public class FirestoreProjectStoreTests : IClassFixture<FirestoreFixture>
         await store.AddAsync(NewProject("um", DateTime.UtcNow));
         Assert.Equal(1, await store.CountAsync());
     }
+
+    // ── Escrita (ADM-07..ADM-11) ────────────────────────────────────────────
+
+    // ADM-07 (sucesso): editar troca os campos e mantém a data de criação original
+    [Fact]
+    public async Task UpdateAsync_troca_os_campos_e_preserva_o_createdAt_original()
+    {
+        var store = _fixture.NewStore(out _);
+        var criadoEm = new DateTime(2021, 3, 3, 0, 0, 0, DateTimeKind.Utc);
+        var id = await store.AddAsync(NewProject("antes", criadoEm));
+
+        var novo = NewProject("depois", new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        novo.Description = "descrição nova";
+        var atualizou = await store.UpdateAsync(id, novo);
+
+        Assert.True(atualizou);
+        var lido = await store.GetByIdAsync(id);
+        Assert.NotNull(lido);
+        Assert.Equal("depois", lido!.Title);
+        Assert.Equal("descrição nova", lido.Description);
+        Assert.Equal(criadoEm, lido.CreatedAt);
+    }
+
+    // ADM-08 (sem sucesso): editar id inexistente não cria documento
+    [Fact]
+    public async Task UpdateAsync_em_id_inexistente_devolve_falso_e_nao_cria()
+    {
+        var store = _fixture.NewStore(out _);
+
+        var atualizou = await store.UpdateAsync("id-que-nunca-existiu", NewProject("fantasma", DateTime.UtcNow));
+
+        Assert.False(atualizou);
+        Assert.Null(await store.GetByIdAsync("id-que-nunca-existiu"));
+        Assert.Equal(0, await store.CountAsync());
+    }
+
+    // ADM-09 (sucesso): remover apaga de verdade
+    [Fact]
+    public async Task DeleteAsync_remove_o_documento_existente()
+    {
+        var store = _fixture.NewStore(out _);
+        var id = await store.AddAsync(NewProject("para apagar", DateTime.UtcNow));
+
+        var removeu = await store.DeleteAsync(id);
+
+        Assert.True(removeu);
+        Assert.Null(await store.GetByIdAsync(id));
+        Assert.Equal(0, await store.CountAsync());
+    }
+
+    // ADM-08 (sem sucesso): o Firestore NÃO lança ao apagar documento inexistente — sem a
+    // precondição, um id inventado responderia "apagado" (Cadeia de Verificação, F2)
+    [Fact]
+    public async Task DeleteAsync_em_id_inexistente_devolve_falso()
+    {
+        var store = _fixture.NewStore(out _);
+
+        Assert.False(await store.DeleteAsync("id-que-nunca-existiu"));
+    }
+
+    // ADM-08 (falha): id com barra faria Document() lançar ArgumentException e virar 500
+    // (Cadeia de Verificação, F5) — o store trata como inexistente
+    [Theory]
+    [InlineData("a/b")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Escrita_com_id_invalido_devolve_falso_sem_lancar(string id)
+    {
+        var store = _fixture.NewStore(out _);
+
+        Assert.False(await store.UpdateAsync(id, NewProject("qualquer", DateTime.UtcNow)));
+        Assert.False(await store.DeleteAsync(id));
+    }
+
+    // ADM-11: a ordem das decisões é informação (AD-008) e sobrevive à gravação e à leitura
+    [Fact]
+    public async Task Ordem_das_decisoes_sobrevive_ao_round_trip()
+    {
+        var store = _fixture.NewStore(out _);
+        var projeto = NewProject("com decisões", DateTime.UtcNow);
+        projeto.Decisions =
+        [
+            new Decision { Title = "primeira", Why = "p1" },
+            new Decision { Title = "segunda", Why = "p2" },
+            new Decision { Title = "terceira", Why = "p3" },
+        ];
+
+        var id = await store.AddAsync(projeto);
+        var lido = await store.GetByIdAsync(id);
+
+        Assert.Equal(["primeira", "segunda", "terceira"], lido!.Decisions.Select(d => d.Title));
+
+        var reordenado = NewProject("com decisões", DateTime.UtcNow);
+        reordenado.Decisions = [projeto.Decisions[2], projeto.Decisions[0], projeto.Decisions[1]];
+        await store.UpdateAsync(id, reordenado);
+
+        var relido = await store.GetByIdAsync(id);
+        Assert.Equal(["terceira", "primeira", "segunda"], relido!.Decisions.Select(d => d.Title));
+    }
 }

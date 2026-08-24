@@ -1,4 +1,5 @@
 using Google.Cloud.Firestore;
+using Grpc.Core;
 using Microsoft.Extensions.Options;
 using Portfolio.Models;
 
@@ -46,4 +47,54 @@ public class FirestoreProjectStore(FirestoreDb db, IOptions<FirestoreOptions> op
         var reference = await Projects.AddAsync(project, cancellationToken);
         return reference.Id;
     }
+
+    /// <summary>
+    /// Sobrescreve o projeto preservando o <c>CreatedAt</c> já gravado. Devolve false — sem lançar —
+    /// quando o id não existe ou não é válido.
+    ///
+    /// Lê antes de gravar porque <c>SetAsync</c> substitui o documento inteiro: os campos ausentes
+    /// no objeto voltariam a vazio, inclusive a data de criação (verificado no emulador, F3).
+    /// </summary>
+    public async Task<bool> UpdateAsync(string id, Project project, CancellationToken cancellationToken = default)
+    {
+        if (!IdValido(id)) return false;
+
+        var documento = Projects.Document(id);
+        var atual = await documento.GetSnapshotAsync(cancellationToken);
+        if (!atual.Exists) return false;
+
+        project.CreatedAt = atual.ConvertTo<Project>().CreatedAt;
+        await documento.SetAsync(project, cancellationToken: cancellationToken);
+        return true;
+    }
+
+    /// <summary>
+    /// Remove o projeto. Devolve false quando o id não existe.
+    ///
+    /// A precondição não é zelo: <c>DeleteAsync</c> sem ela **não lança** para documento
+    /// inexistente (verificado no emulador, F2), e o endpoint responderia 204 para um id
+    /// inventado em vez de 404.
+    /// </summary>
+    public async Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    {
+        if (!IdValido(id)) return false;
+
+        try
+        {
+            await Projects.Document(id).DeleteAsync(Precondition.MustExist, cancellationToken);
+            return true;
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
+        {
+            // gRPC não passa daqui: quem chama lida com bool, não com exceção de transporte.
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// <c>Document("a/b")</c> lança <c>ArgumentException</c> (verificado, F5) — um id com barra
+    /// vindo da rota viraria 500. Aqui ele é apenas um id que não existe.
+    /// </summary>
+    private static bool IdValido(string id) =>
+        !string.IsNullOrWhiteSpace(id) && !id.Contains('/');
 }
