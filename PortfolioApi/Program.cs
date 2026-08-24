@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using Google.Apis.Auth.OAuth2;
 using Google.Api.Gax;
 using Google.Cloud.Firestore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Portfolio.Data;
@@ -69,6 +70,24 @@ builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<EmailService>();
 
+builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection("Admin"));
+builder.Services.AddSingleton<AdminTokenService>();
+
+// A validação do token precisa da chave no momento em que o esquema é registrado, antes de
+// existir um provedor de serviços para injetar IOptions — daí a leitura direta da configuração.
+var adminOptions = builder.Configuration.GetSection("Admin").Get<AdminOptions>() ?? new AdminOptions();
+if (!adminOptions.IsConfigured)
+{
+    Console.WriteLine(
+        "[Admin] Área administrativa DESLIGADA: Admin__PasswordHash e/ou Admin__JwtSigningKey " +
+        "ausentes (a chave precisa de 32 bytes ou mais). Login e escrita respondem 401.");
+}
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => options.TokenValidationParameters = AdminTokenService.ValidationParameters(adminOptions));
+builder.Services.AddAuthorization();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("contact", opt =>
@@ -78,6 +97,9 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit = 0;
     });
+
+    // Política própria para o login: 429 em vez do 503 global, sem alterar a de contato (D-10).
+    options.AddPolicy(LoginRateLimitPolicy.Name, new LoginRateLimitPolicy());
 });
 
 var app = builder.Build();
@@ -114,9 +136,16 @@ else
 
 app.UseCors("Frontend");
 app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapHealthEndpoints();
 app.MapContactEndpoints();
 app.MapProjectsEndpoints();
+app.MapAdminEndpoints();
 
 app.Run();
+
+// Torna a classe gerada pelos top-level statements visível para WebApplicationFactory nos testes.
+// Sem isto ela é internal e o host de teste não consegue subir a aplicação real.
+public partial class Program;
