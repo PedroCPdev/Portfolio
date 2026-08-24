@@ -17,8 +17,11 @@
   `--paper` `#1c1f18`, `--rule` `#2e3327`, `--ink` `#e6e8df`, `--ink-dim` `#9da396`,
   `--amber` `#e0a43c`, `--clay` `#b5563c`. Usar as utilities (`bg-ground`, `text-amber`,
   `border-rule`), nunca hex literal em componente — `design-system.test.ts` falha se um aparecer.
-- `--clay` é **reservado** a dois papéis: a linha de custo em `DecisionRecord.tsx` e mensagem de
-  erro em `ContactForm.tsx`. Usá-lo em qualquer outro componente quebra o teste que guarda a reserva.
+- `--clay` é **reservado** a três papéis: a linha de custo em `DecisionRecord.tsx`, mensagem de
+  erro (`ContactForm.tsx` e o painel admin) e ação destrutiva (excluir projeto, em
+  `components/admin/`). Usá-lo em qualquer outro componente quebra o teste que guarda a reserva.
+  A extensão ao painel foi aprovada pelo usuário em 2026-08-24: o papel é o mesmo, o que mudou
+  foi haver mais um lugar onde erro e perigo aparecem.
 - Largura é responsabilidade de `globals.css`, não de componente: `.shell` é o contêiner da página
   e `.measure` limita a prosa a 65ch. Nenhum componente define `max-w-*` de página — tela larga
   alarga o contêiner, nunca a linha de leitura.

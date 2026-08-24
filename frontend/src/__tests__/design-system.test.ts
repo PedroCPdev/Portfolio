@@ -156,8 +156,19 @@ describe("PD-05 registro de decisão", () => {
     expect(rec, "o bloco de custo precisa ser condicional").toMatch(/\{decision\.cost\s*&&/);
   });
 
-  it("reserva clay a custo e erro — nenhum outro componente o usa", () => {
-    const ALLOWED = new Set(["DecisionRecord.tsx", "ContactForm.tsx"]);
+  // A reserva vale por PAPEL: custo, erro e ação destrutiva. Os arquivos do painel entraram
+  // aqui com aprovação explícita do usuário em 2026-08-24, junto com a linha correspondente de
+  // CONVENTIONS.md — não para destravar o gate, mas porque mensagem de erro do painel e o
+  // botão de excluir são exatamente os dois papéis que o token já tinha.
+  it("reserva clay a custo, erro e ação destrutiva — nenhum outro componente o usa", () => {
+    const ALLOWED = new Set([
+      "DecisionRecord.tsx",
+      "ContactForm.tsx",
+      "ProjectForm.tsx",
+      "DeleteConfirm.tsx",
+      "AdminPanel.tsx",
+      "LoginForm.tsx",
+    ]);
     const offenders = sourceFiles()
       .filter((f) => f.includes("components"))
       .filter((f) => /clay/.test(readFileSync(f, "utf8")))
