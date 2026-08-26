@@ -118,6 +118,49 @@ Memória persistente do projeto.
 - **Impacto:** `design-system.test.ts` → `PS-02` exige `icon.svg` presente, `favicon.ico`
   ausente, e o bloco `prefers-color-scheme` com o `aria-label` preservado.
 
+### AD-012: Portfólio passa a ter área administrativa autenticada
+- **Decisão:** revogar a linha de `PROJECT.md` que colocava "área administrativa / CRUD
+  autenticado de projetos" **fora de escopo de nível projeto**. Passa a existir `/admin` no
+  frontend e escrita autenticada em `/api/projects`.
+- **Razão:** cadastrar projeto era digitar sete campos no console do Firebase, três deles por
+  decisão dentro de um array de mapas. O próprio AD-008 registrou "dobra o custo de digitação no
+  console, sem painel admin" como custo assumido — esta feature paga essa dívida. Pedido do
+  usuário em 2026-08-24.
+- **Trade-off:** a superfície pública cresce em quatro endpoints e uma rota. O endpoint mais
+  perigoso (`DELETE`) passa a existir na internet, protegido por JWT e por confirmação digitada.
+  Um dos dois projetos semeados pelo `DataSeeder` anuncia "No admin area" como decisão — o texto
+  do seed ficou desatualizado de propósito, não é dado de produção.
+- **Impacto:** `PROJECT.md`, `ROADMAP.md`, `CONVENTIONS.md` e `INTEGRATIONS.md` atualizados.
+  A ideia adiada "Endpoints de escrita / painel admin" (2026-08-18) sai do backlog.
+
+### AD-013: Autenticação por senha + JWT emitido pela própria API
+- **Decisão:** senha única guardada como hash PBKDF2 em `Admin__PasswordHash`; login devolve JWT
+  HS256 de 8h assinado com `Admin__JwtSigningKey`. Recusadas: Firebase Authentication e chave
+  estática em header.
+- **Razão:** há um único administrador — cadastro, perfis e recuperação de senha não têm para
+  quem existir. O JWT é stateless, o que importa porque a instância do Render dorme e sobe
+  zerada: sessão em memória exigiria login novo a cada religamento. `JwtBearer` nativo também é
+  peça demonstrável, que é objetivo declarado do projeto.
+- **Trade-off:** não existe logout do lado do servidor — token vazado vale até expirar. A
+  revogação de emergência é trocar `Admin__JwtSigningKey`, que invalida todos de uma vez. O
+  token vive em `sessionStorage` e não em cookie httpOnly, porque painel (Vercel) e API (Render)
+  são sites diferentes e o cookie seria third-party, barrado pelo Safari e pelo Chrome — o
+  preço é exposição a XSS, mitigada por `/admin` só renderizar texto do próprio admin.
+- **Impacto:** duas variáveis de ambiente novas no Render. Sem elas a área fica **fechada**
+  (login 401, escrita 401), o oposto do `EmailService`, que degrada em silêncio (C-9).
+
+### AD-014: A escrita reaproveita o model, e o servidor descarta `id` e `createdAt` da entrada
+- **Decisão:** seguir sem DTO (C-4): `POST`/`PUT` desserializam `Project` inteiro e o servidor
+  ignora `id` e `createdAt` vindos do cliente. `PUT` lê o documento antes de gravar para
+  preservar a data de criação.
+- **Razão:** `CONVENTIONS.md` fixa "sem DTOs", e introduzi-los seria mudança de arquitetura
+  fora do pedido. A leitura antes da escrita não é zelo: `SetAsync` substitui o documento
+  inteiro, então sem ela `createdAt`, `tags` e `decisions` ausentes no corpo voltariam a vazio.
+- **Trade-off:** o compilador não expressa "estes dois campos são ignorados" — quem segura essa
+  regra é `AdminProjectsEndpointTests.Post_ignora_id_e_createdAt_enviados_pelo_cliente`. E cada
+  edição custa duas idas ao Firestore em vez de uma.
+- **Impacto:** o contrato público de leitura não muda em nada (ADM-12 é o teste de regressão).
+
 ## Bloqueios (B-NNN)
 
 ### B-002: Service account do Firebase dentro do repositório — RESOLVIDO
@@ -197,6 +240,26 @@ O que torna isso perigoso: **build, lint e testes ficam todos verdes**. Só apar
 pego por screenshot, não por gate. Correção: as variáveis do `next/font` vão no `<html>`.
 Guardado por um teste de regressão em `design-system.test.ts`.
 
+### L-008: o Firestore trunca `DateTime` em microssegundo
+`DateTime.UtcNow` tem precisão de 100 ns; o `Timestamp` do Firestore guarda microssegundos.
+Gravar `...5523137Z` e ler de volta devolve `...5523130Z`. Comparação de igualdade exata entre
+o objeto que foi enviado e o que foi lido **falha**, e o teste que compara data precisa usar o
+valor gravado como referência. Descoberto quando o teste de preservação do `createdAt` ficou
+vermelho por 7 ticks.
+
+### L-009: o TestServer não aplica limite de corpo
+`WebApplicationFactory` sobe a aplicação num TestServer em memória, que ignora
+`IHttpMaxRequestBodySizeFeature`. Um corpo acima do limite chega inteiro e quem responde é a
+validação (`400`), não o servidor (`413`). Contra Kestrel real o `413` acontece — verificado.
+Consequência prática: requisito sobre tamanho de corpo não é observável por teste de integração
+em memória; o que dá para afirmar automaticamente é o metadata declarado pelo endpoint.
+
+### L-010: o lint do Next 16 reprova `setState` síncrono dentro de `useEffect`
+`react-hooks/set-state-in-effect` (React Compiler) quebra o gate, e a análise segue para dentro
+da função chamada pelo efeito — `void carregar()` também é acusado. Os dois caminhos que passam:
+`useSyncExternalStore` para estado que vem de fora do React (foi o caso do `sessionStorage`), e
+`setState` dentro do callback da promessa (`.then`), não no corpo do efeito.
+
 ## Ideias Adiadas
 
 - **A lista Core do About continua sendo o sinal `.NET` mais forte da página.** Depois do
@@ -220,10 +283,18 @@ Guardado por um teste de regressão em `design-system.test.ts`.
 
 - **Introduzir DTOs na API.** Hoje os models são serializados direto (C-4), então mudar
   um campo quebra o contrato público sem aviso do compilador. (2026-08-18)
-- **Endpoints de escrita / painel admin** para cadastrar projetos sem abrir o console
-  do Firebase. (2026-08-18)
+- ~~**Endpoints de escrita / painel admin**~~ — **feito** em 2026-08-24, feature
+  `admin-panel` (AD-012).
 
-- **`CLAUDE.md:23` afirma "No test runner is configured in `package.json`" e está errado.**
-  O frontend tem vitest (`"test": "vitest run"`, vitest ^3.2.7) e `.specs/codebase/TESTING.md` já
-  documenta o gate corretamente. Achado durante o redesign; fora do escopo daquela tarefa, então
-  não foi corrigido junto. Uma linha para arrumar. (2026-08-20)
+- **Revalidação sob demanda do ISR ao salvar no painel.** Hoje a home leva até 60s para refletir
+  uma mudança (`next: { revalidate: 60 }`). Um `revalidatePath` disparado pelo painel deixaria a
+  atualização instantânea; exige rota de revalidação no Next protegida por segredo. Deixado fora
+  do escopo da feature do painel. (2026-08-24)
+
+- **Semente desatualizada.** `DataSeeder` semeia um projeto cuja decisão declarada é
+  "No admin area" — texto que a feature `admin-panel` tornou falso. Só afeta banco vazio, e os
+  documentos de produção não vêm do seed. (2026-08-24)
+
+- ~~**`CLAUDE.md:23` afirma "No test runner is configured in `package.json`"**~~ — **feito** em
+  2026-08-24, no fechamento da feature `admin-panel`: a linha passou a descrever o vitest e o
+  jsdom por docblock, que a feature tornou parte do gate.

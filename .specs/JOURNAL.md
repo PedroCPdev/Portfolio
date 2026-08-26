@@ -5,6 +5,107 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-24/26 — Painel administrativo autenticado (feature `admin-panel`)
+
+Cadastrar, editar e excluir projeto deixou de ser digitação manual no console do Firebase e
+passou a ser uma tela em `/admin`, protegida por senha; a API ganhou escrita autenticada por JWT
+em `/api/projects`, com validação declarativa do corpo e limite de tamanho.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `PortfolioApi/Auth/AdminOptions.cs` | criado | concentra a configuração do admin e o `IsConfigured` que fecha a área quando falta variável |
+| `PortfolioApi/Auth/AdminPasswordHasher.cs` | criado | senha nunca em claro na configuração: PBKDF2 `210000.<salt>.<hash>` |
+| `PortfolioApi/Auth/AdminTokenService.cs` | criado | emissão e parâmetros de validação do JWT num lugar só, para os dois lados não divergirem |
+| `PortfolioApi/Auth/LoginRateLimitPolicy.cs` | criado | login é o único endpoint que aceita adivinhação; 5/min corta força bruta |
+| `PortfolioApi/Endpoints/AdminEndpoints.cs` | criado | `POST /api/admin/login`, seguindo a convenção `Map*Endpoints` dos outros grupos |
+| `PortfolioApi/Endpoints/ProjectsEndpoints.cs` | modificado | `POST`/`PUT`/`DELETE` autenticados; `GET` permanece anônimo (ADM-12) |
+| `PortfolioApi/Validation/ValidationFilter.cs` | criado | Minimal API não executa DataAnnotations sozinha — sem o filtro, atributo no model é decoração |
+| `PortfolioApi/Validation/ValidateItemsAttribute.cs` | criado | o `Validator` não desce nos itens de uma coleção; sem ele, decisão inválida passava |
+| `PortfolioApi/Validation/NotBlankAttribute.cs` | criado | `[Required]` aceita string só de espaço, que é título vazio na tela |
+| `PortfolioApi/Models/Project.cs` · `Decision.cs` | modificado | limites declarados onde o dado é definido, não espalhados pelo endpoint |
+| `PortfolioApi/Models/LoginRequest.cs` | criado | corpo do login, o único payload que não é um model de domínio |
+| `PortfolioApi/Data/FirestoreProjectStore.cs` | modificado | `UpdateAsync`/`DeleteAsync`; traduz `RpcException` e id inválido em `false`, para gRPC não subir ao endpoint |
+| `PortfolioApi/Program.cs` | modificado | wiring de JwtBearer, rate limit e o guard `hash-password`; `public partial class Program;` para o teste enxergar |
+| `PortfolioApi/PortfolioApi.csproj` | modificado | `Microsoft.AspNetCore.Authentication.JwtBearer` 9.0.16 |
+| `PortfolioApi/appsettings.Example.json` | modificado | as duas variáveis novas visíveis para quem for configurar o Render |
+| `PortfolioApi.Tests/AdminApiFactory.cs` | criado | sobe a app em memória com `FIRESTORE_EMULATOR_HOST` em porta morta — a suíte nunca fala com Firestore de produção |
+| `PortfolioApi.Tests/AdminAuthTests.cs` | criado | login: sucesso, fail-closed sem configuração, senha errada, 429 |
+| `PortfolioApi.Tests/AdminPasswordHasherTests.cs` | criado | hash malformado devolve `false` em vez de lançar |
+| `PortfolioApi.Tests/AdminProjectsEndpointTests.cs` | criado | escrita ponta a ponta: 201/200/404/401, `createdAt` preservado, `id` do cliente ignorado |
+| `PortfolioApi.Tests/ProjectValidationTests.cs` | criado | limites e mensagens de erro nomeando o campo |
+| `PortfolioApi.Tests/FirestoreProjectStoreTests.cs` | modificado | round-trip de escrita e ordem das decisões contra o emulador |
+| `PortfolioApi.Tests/PortfolioApi.Tests.csproj` | modificado | `Microsoft.AspNetCore.Mvc.Testing`, sem a qual não há teste HTTP |
+| `frontend/src/lib/admin.ts` | criado | fronteira separada da `api.ts`: `no-store`, `Authorization` e resultado discriminado que expõe o erro |
+| `frontend/src/app/admin/page.tsx` · `layout.tsx` | criado | rota do painel e `robots: { index: false }` |
+| `frontend/src/components/admin/AdminPanel.tsx` | criado | alterna login/lista/formulário e trata sessão expirada num lugar só |
+| `frontend/src/components/admin/LoginForm.tsx` | criado | entrada da sessão, sem revelar se a senha ou a configuração falhou |
+| `frontend/src/components/admin/ProjectForm.tsx` | criado | criação e edição na mesma tela, preenchida a partir do projeto atual |
+| `frontend/src/components/admin/DecisionEditor.tsx` | criado | a ordem das decisões é conteúdo, então precisa ser editável |
+| `frontend/src/components/admin/DeleteConfirm.tsx` | criado | exclusão é irreversível: exige o título digitado igual |
+| `frontend/src/components/admin/__tests__/*.test.tsx` (4 arquivos) | criado | comportamento de cada componente, jsdom por docblock |
+| `frontend/src/lib/__tests__/admin.test.ts` | criado | contrato do cliente com `fetch` mockado, sem rede |
+| `frontend/src/__tests__/design-system.test.ts` | modificado | guarda: `/admin` não pode virar link público nem perder o `robots` |
+| `frontend/vitest.config.ts` | criado | resolve o alias `@/`; sem ele o vitest resolve import de tipo, mas não de valor |
+| `frontend/package.json` · `package-lock.json` | modificado (lock gerado) | `jsdom`, `@testing-library/react`, `user-event` — dev only, nada entra no bundle |
+| `.specs/features/admin-panel/{context,spec,design,tasks}.md` | criado | requisitos ADM-01..ADM-22, decisões D-1..D-15 e a quebra em T1..T13 |
+| `.specs/features/admin-panel/evidencias/` (3 arquivos) | criado | cadeia de verificação, limite de corpo no Kestrel real e o gate `full` |
+| `.specs/codebase/ARCHITECTURE.md` | modificado | o fluxo do admin e as camadas `Auth/` e `Validation/` no presente |
+| `.specs/codebase/CONVENTIONS.md` · `INTEGRATIONS.md` | modificado | convenção de validação e o mecanismo de sessão como documento vivo |
+| `.specs/codebase/TESTING.md` | modificado | contagem verdadeira (dizia 50, são 159) e como o jsdom é ligado |
+| `.specs/codebase/CONCERNS.md` | modificado | C-13: `GET` com id contendo barra responde 500 — achado, fora do escopo |
+| `.specs/project/PROJECT.md` · `ROADMAP.md` · `STATE.md` | modificado | revoga o fora-de-escopo, marca a feature como feita, AD-012..AD-014 e L-008..L-010 |
+| `CLAUDE.md` | modificado | descrevia o painel como inexistente e afirmava que não havia test runner |
+| `.specs/HANDOFF.md` | modificado | apontava para a sessão de 08-18; agora aponta para o C-5 |
+
+**Como funciona — sessão do admin**
+
+**Pré-requisito fora do repositório: `Admin__PasswordHash` e `Admin__JwtSigningKey` (≥ 32 bytes)
+no Render. Sem as duas a área fica fechada — login e escrita respondem 401.**
+
+```
+/admin → POST /api/admin/login → JWT 8h em sessionStorage → Authorization: Bearer em toda escrita
+```
+
+1. **Dispara** quando alguém abre `/admin` e envia a senha (`components/admin/LoginForm.tsx:15`).
+   Não há agendamento: é sob demanda.
+2. `AdminEndpoints.cs:33` compara a senha com o hash PBKDF2; batendo, `AdminTokenService.cs:21`
+   assina um JWT HS256 de 8h. O painel guarda o token em `sessionStorage` e o lê por
+   `useSyncExternalStore` (`lib/admin.ts:91`). Toda escrita manda `Authorization: Bearer`;
+   `ValidationFilter<Project>` roda antes do handler e o corpo é limitado a 64 KB.
+   Um `401` em qualquer ação apaga a sessão e devolve ao login (`AdminPanel.tsx:48`).
+3. **Está vivo** se `POST /api/admin/login` com a senha certa devolve `200` com `token` e
+   `expiresAt`. Faltando configuração, devolve `401` mesmo com a senha certa — esse é o sinal de
+   variável ausente, não de senha errada.
+4. **Para mexer ou desligar:** trocar `Admin__JwtSigningKey` invalida todos os tokens de uma vez
+   (é a revogação de emergência). Esvaziar as variáveis fecha a área inteira.
+   O `RequireAuthorization()` em `Endpoints/ProjectsEndpoints.cs:45` é o ponto único da proteção.
+
+**Não cobre:** logout do lado do servidor — token vazado vale até expirar. Também não invalida o
+cache ISR: uma alteração salva no painel aparece na home dentro da janela de 60s, não na hora.
+
+**Por que uma fronteira nova em vez de estender `api.ts`:** a `api.ts` existe para engolir falha
+e devolver `[]`, que é o certo para a home pública e o oposto do que um painel precisa — ali um
+erro tem que aparecer na tela. Ver AD-013 e AD-014.
+
+**O que a Cadeia de Verificação evitou:** três suposições morreram rodando código, não por
+memória — o TestServer não aplica limite de corpo (L-009, por isso o `413` tem evidência
+separada contra Kestrel), o Firestore trunca `DateTime` em microssegundo (L-008) e o lint do
+Next 16 reprova `setState` síncrono dentro de `useEffect` (L-010, origem do `useSyncExternalStore`).
+
+**Não toquei:** a correção do `GET /api/projects/{id}` com id inválido — virou C-13 em
+`CONCERNS.md`, porque a tarefa era o painel, não o endpoint de leitura. A revalidação sob demanda
+do ISR e o texto "No admin area" do `DataSeeder`, que a feature tornou falso — ambos viraram
+Ideia Adiada. O `frontend/assets/files.zip`, que entrou no commit `974d1df` por engano e
+**segue no repositório**, pendente de decisão (os 12 commits ainda não foram enviados).
+
+**Gate `full` (saída real, revalidado em 2026-08-26 após reboot da máquina):**
+`dotnet build` 0 warnings/0 errors · `dotnet test` 71 passed, 0 skipped (emulador no ar) ·
+`npm test` 88 passed (7 arquivos) · `npm run build` compilado com `/admin` na lista de rotas ·
+`eslint` exit 0. Total **159**, contra baseline de 59 medida antes da T1 — nenhum teste removido,
+pulado ou enfraquecido.
+
+**Commits:** `0709a1c`..`fcc41a8` (T1..T12) e `docs(specs): registrar painel admin e decisoes AD-012..AD-014` (T13).
+
 ## 2026-08-20 — Ícone do site e posicionamento sem recorte de stack
 
 A página deixou de se apresentar como "backend engineer working in C# and .NET" e passou a se

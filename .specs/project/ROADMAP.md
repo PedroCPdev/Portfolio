@@ -10,11 +10,18 @@
       (keep-alive 08:00–00:00 BRT + retry no frontend; a madrugada segue com cold start,
       absorvido pelo retry)
 
+- [x] Painel administrativo autenticado — `features/admin-panel`
+      (senha + JWT na própria API, CRUD de projetos e editor de decisões em `/admin`;
+      revoga a linha de fora de escopo de `PROJECT.md`, ver AD-012)
+
 ## Features planejadas
 
 - **Endurecimento de segurança** — backlog da auditoria de 2026-08-18, em
   `codebase/CONCERNS.md` → C-5..C-12, na ordem de correção acordada com o usuário.
-  Item 1 (CVEs high do frontend) concluído em `602d02b`; o próximo é C-5.
+  Item 1 (CVEs high do frontend) concluído em `602d02b`; o próximo é C-5 — agora mais barato,
+  porque a feature `admin-panel` já construiu o `ValidationFilter<T>` que ele havia projetado,
+  a fábrica de teste HTTP e o `public partial class Program;`. Falta anotar `ContactMessage` e
+  pendurar o filtro em `/api/contact`. C-13 entrou no backlog em 2026-08-24.
   Este ponteiro existe porque `CONCERNS.md` não entra no carregamento base — sem ele,
   o backlog some numa troca de sessão.
 

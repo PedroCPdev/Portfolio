@@ -10,7 +10,7 @@
 |---|---|---|
 | `build` | `cd PortfolioApi && dotnet build` | compila a API |
 | `quick` | `cd PortfolioApi.Tests && dotnet test` | unit + integração (exige emulador) |
-| `full` | `quick` + `cd frontend && npm test && npm run build && npm run lint` | tudo (50 testes: 20 na API, 30 no frontend) |
+| `full` | `quick` + `cd frontend && npm test && npm run build && npm run lint` | tudo (**159 testes: 71 na API, 88 no frontend**, medido em 2026-08-24) |
 
 ## Emulador Firestore (obrigatório para os testes de integração)
 
@@ -32,6 +32,15 @@ DTO (C-4): renomear uma propriedade do model muda o contrato publico sem o compi
 `frontend/src/__tests__/design-system.test.ts` guarda as invariantes do sistema de design lendo os
 arquivos-fonte (tokens, ausencia de hex legado, foco, movimento reduzido, reserva do `--clay`).
 Tambem roda sem emulador e sem jsdom.
+
+## Testes de componente (frontend)
+Componentes React são testados com `@testing-library/react` sobre **jsdom ligado por arquivo**:
+a primeira linha do teste é `// @vitest-environment jsdom`. O ambiente padrão continua sendo
+`node`, para que os testes que leem código-fonte (`design-system`) e os de `lib/` não paguem o
+custo do DOM. `vitest.config.ts` existe só para resolver o alias `@/` — sem ele o vitest resolve
+import de tipo (que some no transform) mas não import de valor.
+
+Componentes que falam com a API mockam `@/lib/admin` inteiro; nenhum teste de frontend faz rede.
 
 ## Isolamento
 Cada teste de integração usa uma coleção com sufixo único (GUID) para ser parallel-safe.

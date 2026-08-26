@@ -93,3 +93,18 @@ Não são verificáveis a partir do código; exigem o console e ficam com o usu�
 - **Papel da service account:** deve ser *Cloud Datastore User*, nunca Editor/Owner.
 - **Chave do Resend:** restrita a envio e rotacionada se já circulou fora do gerenciador de
   segredos (a auditoria não a encontrou no histórico do git).
+
+## C-13: `GET /api/projects/{id}` responde 500 para id com barra — BAIXO
+`Data/FirestoreProjectStore.cs:30` chama `Projects.Document(id)` sem validar o id.
+`Document("a/b")` lança `ArgumentException: Path must have an odd number of elements`
+(verificado no emulador, evidência da feature `admin-panel`), e um `%2F` na URL chega ao handler
+já decodificado — a resposta vira `500` em vez de `404`.
+
+Severidade baixa: não vaza dado, não escreve nada, e só quem monta a URL à mão chega lá. Vira
+ruído em log e uma resposta errada de contrato.
+
+Os métodos de **escrita** (`UpdateAsync`/`DeleteAsync`, `FirestoreProjectStore.cs:58` e `:78`)
+já tratam id inválido como inexistente desde 2026-08-24; a correção do `GET` não entrou junto
+por disciplina de escopo — a tarefa era o painel admin, não o endpoint de leitura. A correção é
+mover a guarda `IdValido` (`FirestoreProjectStore.cs:97`) para `GetByIdAsync`, com um teste que
+hoje ficaria vermelho.

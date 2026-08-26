@@ -24,5 +24,9 @@ server-side; API ASP.NET Core Minimal expõe os dados e recebe mensagens de cont
 - CORS travado numa única origem lida de `AllowedOrigins`; muda junto com `NEXT_PUBLIC_API_URL`.
 
 ## Fora de escopo (nível projeto)
-- Área administrativa / CRUD autenticado de projetos (escrita é manual no console do Firestore)
 - Multi-usuário, autenticação de visitante, comentários
+- Upload de imagem, rascunho de projeto e log de auditoria no painel admin
+
+> A linha "área administrativa / CRUD autenticado de projetos" **saiu** daqui em 2026-08-24:
+> foi construída (AD-012, feature `admin-panel`). A escrita deixou de ser manual no console do
+> Firebase e passa por `/admin` no site, autenticado por senha + JWT (AD-013).
