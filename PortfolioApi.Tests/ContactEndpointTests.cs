@@ -2,10 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -19,9 +17,12 @@ namespace Portfolio.Tests;
 /// silêncio e nunca chamaria nada — um teste nesse estado afirmaria "não chamou o Resend" sem
 /// poder falhar. Aqui, o caminho feliz chama o espião e o inválido não chega nele.
 ///
-/// Uma fábrica por teste (D-7): o rate limit de /api/contact é de 3/min por aplicação (C-6
-/// segue aberto), então uma fábrica compartilhada faria o quarto teste receber 503 por motivo
-/// alheio ao que ele mede. Nenhum destes testes exige o emulador do Firestore.
+/// Uma fábrica por teste (D-7): desde o C-6 o limite é de 3/min por visitante, e no TestServer
+/// todos estes testes caem na mesma partição (não há X-Forwarded-For e a conexão em memória não
+/// tem IP), então uma fábrica compartilhada faria o quarto teste receber 429 por motivo alheio
+/// ao que ele mede. Nenhum destes testes exige o emulador do Firestore.
+///
+/// A fábrica e o espião moram em ContactApiFactory.cs — ContactRateLimitTests usa os mesmos.
 /// </summary>
 public class ContactEndpointTests
 {
@@ -147,47 +148,5 @@ public class ContactEndpointTests
         Assert.Equal(1, espiao.Chamadas);
         Assert.Equal("https://api.resend.com/emails", espiao.UltimaUrl);
         Assert.Contains("visitante@exemplo.dev", espiao.UltimoCorpo);
-    }
-
-    /// <summary>
-    /// Aplicação real com o e-mail configurado e o handler HTTP trocado pelo espião, para que
-    /// "não chamou o Resend" seja observação e não presunção. Herda de <see cref="AdminApiFactory"/>
-    /// pelo Firestore apontado para um ProjectId que não é o de produção.
-    /// </summary>
-    private sealed class ContactApiFactory(ResendSpy espiao) : AdminApiFactory(extras: new Dictionary<string, string?>
-    {
-        ["Email:ApiKey"] = "chave-de-teste-do-gate",
-        ["Email:ToAddress"] = "destino@teste.dev",
-    })
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            base.ConfigureWebHost(builder);
-            builder.ConfigureTestServices(services =>
-                services.ConfigureHttpClientDefaults(b => b.ConfigurePrimaryHttpMessageHandler(() => espiao)));
-        }
-    }
-
-    /// <summary>Intercepta a saída HTTP: conta as chamadas e nunca deixa o teste tocar a rede.</summary>
-    private sealed class ResendSpy : HttpMessageHandler
-    {
-        public int Chamadas { get; private set; }
-        public string? UltimaUrl { get; private set; }
-        public string UltimoCorpo { get; private set; } = string.Empty;
-
-        protected override async Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            Chamadas++;
-            UltimaUrl = request.RequestUri?.ToString();
-            UltimoCorpo = request.Content is null
-                ? string.Empty
-                : await request.Content.ReadAsStringAsync(cancellationToken);
-
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("""{"id":"fake-do-espiao"}""", Encoding.UTF8, "application/json"),
-            };
-        }
     }
 }

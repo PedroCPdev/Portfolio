@@ -5,6 +5,84 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-26 — Rate limit do contato por visitante (C-6)
+
+Três requisições de um script deixaram de derrubar o formulário de contato para todo mundo: a
+janela de 3/min passou a ser de cada visitante, com um teto de 20/min para o endpoint inteiro, e
+o excedente responde `429` em vez de `503`.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `PortfolioApi/RateLimiting/ContactRateLimiter.cs` | criado | as duas camadas encadeadas num lugar só; a ordem do encadeamento é a decisão inteira e precisa de um arquivo onde ela caiba explicada |
+| `PortfolioApi/Program.cs:93-110` | modificado | `ForwardedHeaders` configurado — sem isso o `RemoteIpAddress` é o do proxy do Render e a partição por IP não existe |
+| `PortfolioApi/Program.cs:112-125` | modificado | sai o `AddFixedWindowLimiter("contact")` de partição única; entram o `RejectionStatusCode` 429 e o encadeado como `GlobalLimiter` |
+| `PortfolioApi/Program.cs:159-161` | modificado | `UseForwardedHeaders` como primeiro middleware: o limitador lê o IP, e log de IP antes disso registraria o proxy |
+| `PortfolioApi/Endpoints/ContactEndpoints.cs:15,33,43` | modificado | a rota vira constante (o limitador reconhece a requisição por ela) e o `.RequireRateLimiting` sai, substituído por comentário apontando para onde o limite passou a morar |
+| `PortfolioApi/Auth/LoginRateLimitPolicy.cs:6-19` | modificado | só o XML doc: ele afirmava que particionar por `X-Forwarded-For` é falso isolamento, o que esta feature mediu ser verdade só para o endereço da esquerda |
+| `PortfolioApi.Tests/ContactRateLimitTests.cs` | criado | 8 testes cobrindo RL-01..RL-07, incluindo o que prova que recusa por visitante não drena o teto |
+| `PortfolioApi.Tests/ContactApiFactory.cs` | criado | `ContactApiFactory` + `ResendSpy` saíram de dentro de `ContactEndpointTests` para serem usados pelas duas classes sem duplicar configuração de teste |
+| `PortfolioApi.Tests/ContactEndpointTests.cs` | modificado | docblock (dizia "C-6 segue aberto" e `503`) e a extração acima; nenhuma asserção mudou |
+| `.specs/features/contact-rate-limit-por-visitante/spec.md` · `design.md` | criado | RL-01..RL-07 com matriz preenchida, e o design com o porquê de cada ordem testada |
+| `.specs/features/contact-rate-limit-por-visitante/evidencias/` (2 arquivos) | criado | cadeia de verificação (12 probes) e o gate `full` |
+| `.specs/codebase/CONCERNS.md` | modificado | C-6 marcado RESOLVIDO, ponteiro do backlog para o C-7, e C-10 corrigido — ele descrevia o rate limit como barreira que paga com disponibilidade |
+| `.specs/codebase/INTEGRATIONS.md` | modificado | o mecanismo em operação, no presente: gatilho, ordem, sinal de vida, onde mexer |
+| `.specs/codebase/ARCHITECTURE.md:11-12,49-51,58-60` | modificado | o diagrama dizia "rate limit 3/min" e a FASE 1 não citava ForwardedHeaders |
+| `.specs/codebase/TESTING.md:13` | modificado | contagem verdadeira: 174 → 182 |
+| `.specs/project/STATE.md` | modificado | AD-015, L-013, L-014 e três ideias adiadas |
+| `.specs/project/ROADMAP.md` | modificado | item 3 do backlog concluído |
+| `CLAUDE.md:58` | modificado | dizia "rate-limited to 3 requests/min", que era exatamente o C-6 |
+| `.specs/HANDOFF.md` | modificado | próximo item é o C-7 |
+
+**Como funciona — rate limit do formulário de contato**
+
+*Nenhum pré-requisito fora do repositório: os números vivem no código, não em variável de ambiente.*
+
+```
+requisição → UseForwardedHeaders (RemoteIpAddress := IP mais à direita do X-Forwarded-For)
+           → GlobalLimiter encadeado:
+               1. janela do visitante  3/min por IP   → estourou? 429, e para aqui
+               2. teto do endpoint    20/min somando todos → estourou? 429
+           → endpoint (só /api/contact entra; o resto recebe NoLimiter)
+```
+
+1. **Dispara** em toda requisição que chega na API — o limitador é `GlobalLimiter`
+   (`Program.cs:121`) e roda antes dos endpoints. Ele próprio decide o que lhe interessa:
+   `EhOContato` (`ContactRateLimiter.cs:66`) devolve `NoLimiter` para `/health`, `/api/projects`
+   e o login, que passam direto.
+2. A ordem importa e não é intuitiva: com o teto adquirido primeiro, uma requisição recusada
+   pela janela do visitante consome **2** permits do teto (medido, L-013) — um atacante sozinho
+   esgotaria o teto e reproduziria o C-6. Encadeando à mão, o teto só é consultado por quem
+   passou pela própria janela.
+3. **Sinal de vida:** quatro envios do mesmo navegador em menos de um minuto — o quarto volta
+   `429`. Sem `X-Forwarded-For` válido todos caem numa partição só e o limite continua valendo,
+   degradando para o comportamento anterior ao C-6, nunca para "sem limite".
+4. **Onde mexer:** `PorVisitantePorMinuto` e `TetoDoEndpointPorMinuto`
+   (`ContactRateLimiter.cs:26,34`). Para desligar, remover `options.GlobalLimiter`.
+
+**O que não cobre:** spam bem-formado dentro da cota — 3 mensagens/min por IP saturam a cota
+diária do Resend sem esbarrar no limite (C-10, próximo do backlog depois do C-7). Não emite
+`Retry-After`. E não alcança o login, que segue com partição única.
+
+**Não toquei:** `LoginRateLimitPolicy` além do comentário — particionar o login por IP usaria a
+mesma chave e é tentador, mas o C-6 é sobre o endpoint de contato; virou ideia adiada, junto com
+a remoção do `OnRejected` que ficou redundante. O frontend não mudou: o `429` cai no mesmo
+caminho de erro que o `503` caía. E `ContactEndpointTests` manteve uma fábrica por teste — com
+todos os testes na mesma partição do TestServer, a precaução continua necessária.
+
+**Gate `full` (saída real, emulador no ar):**
+```
+dotnet test PortfolioApi.Tests → Failed: 0, Passed: 94, Skipped: 0, Total: 94
+npm test                        → 7 arquivos, 88 testes, 88 passed
+npm run build                   → exit 0, 4 rotas, 3 páginas SSG
+npm run lint                    → exit 0
+```
+RED antes da implementação: `Failed: 7, Passed: 1` — o único verde era `/health`, que é guarda de
+regressão do novo `GlobalLimiter`, não requisito dirigido por RED.
+
+**Commit:** `feat(api): limitar contato por visitante em vez de globalmente`
+
+---
+
 ## 2026-08-26 — Validação de entrada no POST /api/contact (C-5)
 
 O formulário de contato deixou de aceitar qualquer coisa: nome e mensagem sem teto, e-mail em

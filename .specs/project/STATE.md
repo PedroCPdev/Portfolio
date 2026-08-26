@@ -161,6 +161,24 @@ Memória persistente do projeto.
   edição custa duas idas ao Firestore em vez de uma.
 - **Impacto:** o contrato público de leitura não muda em nada (ADM-12 é o teste de regressão).
 
+### AD-015: rate limit do contato encadeia janela por visitante e teto do endpoint
+- **Decisão:** `POST /api/contact` passa a ter duas camadas — 3/min por IP e 20/min no endpoint
+  inteiro —, encadeadas com `PartitionedRateLimiter.CreateChained` e registradas como
+  `GlobalLimiter`. O IP vem do `X-Forwarded-For` via `UseForwardedHeaders` com as listas de proxy
+  limpas e `ForwardLimit = 1`. `RejectionStatusCode` global vira `429`.
+- **Razão:** a partição única fazia três requisições de um script deixarem o formulário
+  indisponível para todos (C-6). Particionar por IP sozinho abriria buraco novo: quem alcançar a
+  aplicação sem passar pelo proxy escreve o cabeçalho que quiser e ganha partição infinita — daí
+  o teto. O encadeamento é registrado como `GlobalLimiter`, e não como política do endpoint,
+  porque com o teto adquirido primeiro **uma recusa por visitante consome 2 permits do teto**
+  (medido), e um atacante sozinho reproduziria o C-6 em ~11 requisições.
+- **Trade-off:** o endpoint deixa de declarar `.RequireRateLimiting` na própria linha — quem lê
+  `ContactEndpoints.cs` só encontra o limite por um comentário e pela constante `Rota`. E o teto
+  de 20/min ainda pode ser esgotado por quem forja cabeçalho: o C-6 sobe a barra de 3 para 20,
+  não desaparece. Escolhido pelo usuário em 2026-08-26 entre três opções.
+- **Impacto:** revoga a premissa da D-10 do `admin-panel` (particionar por `X-Forwarded-For` é
+  falso isolamento) — vale para o endereço à esquerda, não para o à direita. O login **não** mudou.
+
 ## Bloqueios (B-NNN)
 
 ### B-002: Service account do Firebase dentro do repositório — RESOLVIDO
@@ -276,6 +294,26 @@ também para `CreateClient()` sem nome, que é o que o `EmailService` usa. Dentr
 registrações do `Program.cs` e por isso ganha. É o ponto de interceptação de qualquer chamada
 HTTP de saída da API em teste, sem precisar injetar abstração nova no código de produção.
 
+### L-013: no rate limiter, requisição recusada pode consumir permit duas vezes
+Com o teto em `RateLimiterOptions.GlobalLimiter` e a partição por IP como política do endpoint, o
+middleware adquire o global primeiro. Requisição **aceita** consome 1 permit do teto;
+**recusada** pela política do endpoint consome **2** (medido: teto de 20 caiu 19→17→15→13→11 com
+uma aceita e quatro recusadas). Consequência: encadear na ordem errada faz o limitador de trás
+ser drenado justamente por quem já está sendo barrado. `PartitionedRateLimiter.CreateChained`
+registrado como `GlobalLimiter` adquire na ordem declarada e não tem esse efeito — verificado.
+
+### L-014: `UseForwardedHeaders` sem configuração é inerte, e o valor confiável é o da direita
+Dois defaults desligam o middleware: `ForwardedHeaders = None` (nenhum cabeçalho é processado) e
+`KnownProxies = [::1]` / `KnownNetworks = [127.0.0.1/8]` (só confia em proxy no loopback). Atrás
+do Render, chamar `app.UseForwardedHeaders()` sem `Configure<ForwardedHeadersOptions>` não muda
+nada e o `RemoteIpAddress` continua sendo o do proxy — sem erro, sem log.
+
+Com as listas limpas, o middleware consome a entrada **mais à direita** do `X-Forwarded-For`, que
+é a que o proxy imediato anexou — e é por isso que particionar por ela não é falso isolamento.
+`ForwardLimit = 1` (o padrão) é a garantia: com `2` ele anda um salto à esquerda e passa a
+acreditar no valor escrito pelo cliente. Valor malformado não vira partição lixo — o IP
+simplesmente permanece o da conexão.
+
 ## Ideias Adiadas
 
 - **A lista Core do About continua sendo o sinal `.NET` mais forte da página.** Depois do
@@ -314,3 +352,16 @@ HTTP de saída da API em teste, sem precisar injetar abstração nova no código
 - ~~**`CLAUDE.md:23` afirma "No test runner is configured in `package.json`"**~~ — **feito** em
   2026-08-24, no fechamento da feature `admin-panel`: a linha passou a descrever o vitest e o
   jsdom por docblock, que a feature tornou parte do gate.
+
+- **`Retry-After` na resposta 429.** O `FixedWindowRateLimiter` não emite a metadata (verificado
+  no C-6), então o cliente não sabe quanto falta para a janela virar. Produzir o cabeçalho exige
+  calcular o fim da janela à mão no `OnRejected`. (2026-08-26)
+
+- **Rate limit do login por visitante.** O C-6 particionou só o contato; `LoginRateLimitPolicy`
+  segue com partição única, então alguém pode esgotar as 5 tentativas/min e deixar o admin um
+  minuto sem entrar. A infraestrutura já existe — é aplicar a mesma chave de partição. Ficou de
+  fora por disciplina de escopo: o C-6 é sobre o endpoint de contato. (2026-08-26)
+
+- **`OnRejected` redundante em `LoginRateLimitPolicy`.** Desde que o `RejectionStatusCode` global
+  virou 429 (AD-015), o `OnRejected` da política do login não muda mais nada. Removê-lo é limpeza
+  de duas linhas em arquivo de autenticação, fora do escopo do C-6. (2026-08-26)

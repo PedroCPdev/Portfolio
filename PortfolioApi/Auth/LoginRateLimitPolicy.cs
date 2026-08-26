@@ -4,15 +4,18 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Portfolio.Auth;
 
 /// <summary>
-/// Cinco tentativas de login por minuto, com <c>429</c> em vez do <c>503</c> global.
-/// <c>RateLimiterOptions.RejectionStatusCode</c> vale para o limitador inteiro, e mudá-lo
-/// alteraria também a resposta de <c>/api/contact</c> — política própria evita esse efeito
-/// colateral (design D-10).
+/// Cinco tentativas de login por minuto.
 ///
-/// A partição é única, não por IP: atrás do proxy do Render o IP do cliente só chega em
-/// <c>X-Forwarded-For</c>, cabeçalho que o atacante controla. Particionar por ele daria
-/// isolamento aparente e nenhum real. O custo assumido é herdar o C-6: alguém pode esgotar a
-/// janela e me deixar um minuto sem login.
+/// O <c>OnRejected</c> daqui nasceu (D-10) para dar <c>429</c> ao login sem mudar o <c>503</c>
+/// que o contato então devolvia. Desde o C-6 o <c>RejectionStatusCode</c> global já é <c>429</c>,
+/// então ele virou redundante — mantido por ser redundante, não errado, e por remover código de
+/// autenticação estar fora do escopo daquela tarefa.
+///
+/// A partição é única, não por IP. O motivo original registrado — "o <c>X-Forwarded-For</c> é
+/// controlado pelo atacante" — vale para o endereço mais à ESQUERDA do cabeçalho; o C-6 mediu
+/// que o middleware lê o mais à direita, anexado pelo proxy, e passou a particionar o contato
+/// por ele. Aqui nada mudou: o custo assumido segue sendo alguém esgotar a janela e me deixar um
+/// minuto sem login. Estender o mesmo tratamento ao login é ideia adiada, não dívida escondida.
 /// </summary>
 public class LoginRateLimitPolicy : IRateLimiterPolicy<string>
 {

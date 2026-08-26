@@ -3,39 +3,32 @@
 > Ponteiro para retomar rápido, não resumo completo. Sempre sobrescrito — o histórico é o `JOURNAL.md`.
 
 **Data/sessão:** 2026-08-26
-**Branch:** `main`, **14 commits à frente de `origin/main`** (nada foi enviado ainda)
-**Feature ativa:** nenhuma. `admin-panel` e C-5 fecharam; o próximo item é **C-6**.
+**Branch:** `main`, **15 commits à frente de `origin/main`** (nada foi enviado ainda)
+**Feature ativa:** nenhuma. C-5 e C-6 fecharam; o próximo item é **C-7**.
 
 ## Concluído
 
+- **C-6 — rate limit por visitante — fechado em 2026-08-26.**
+  `POST /api/contact` tem duas camadas encadeadas (3/min por IP + 20/min no endpoint) registradas
+  como `GlobalLimiter`, e o excedente responde `429`. O IP vem do `X-Forwarded-For` via
+  `UseForwardedHeaders` configurado (`ForwardLimit = 1`, listas de proxy limpas). 8 testes novos
+  (`ContactRateLimitTests.cs`), RL-01..RL-07 verificados na matriz. Gate `full`: API 86 → **94**,
+  frontend 88, zero pulados. Decisão em AD-015; lições L-013 e L-014.
 - **C-5 — validação de entrada no `POST /api/contact` — fechado em 2026-08-26.**
-  `ContactMessage` declara os limites (80/254/4000 + formato de e-mail), o
-  `ValidationFilter<ContactMessage>` os executa e o corpo tem teto de 32 KB. 15 testes novos
-  (`ContactEndpointTests.cs`), CT-01..CT-05 verificados na matriz do `spec.md`, e o `413` com
-  evidência contra Kestrel real. Gate `quick`: API 71 → **86**, zero pulados.
-- **Feature `admin-panel` (T1..T13) — fechada.** Senha PBKDF2 + JWT na própria API, escrita
-  autenticada em `/api/projects`, painel `/admin` no frontend com editor de decisões e
-  confirmação de exclusão por título. 22/22 requisitos verificados na matriz do `spec.md`.
-  Gate `full` verde e revalidado em 2026-08-26 após o reboot:
-  71 testes na API + 88 no frontend = **159**, zero pulados
-  (`features/admin-panel/evidencias/20260824-gate-full-APROVADO.md`).
-  Decisões em `STATE.md` → AD-012, AD-013, AD-014. Lições novas → L-008, L-009, L-010.
-- **A sessão de 2026-08-24 foi interrompida por reboot entre o gate e o commit da T13.**
-  O que faltava era só o fechamento documental; foi retomado e commitado em 2026-08-26.
+  Limites 80/254/4000 + formato de e-mail no `ContactMessage`, executados pelo
+  `ValidationFilter`, corpo com teto de 32 KB. 15 testes.
+- **Feature `admin-panel` (T1..T13) — fechada em 2026-08-24/26.** Senha PBKDF2 + JWT, escrita
+  autenticada em `/api/projects`, painel `/admin`. 22/22 requisitos verificados.
 
 ## Pendente (próximo passo)
 
-**C-6 — rate limit global, não por visitante.** `Program.cs:93-99` usa uma janela fixa de 3
-requisições/min para o endpoint `/api/contact` **inteiro**: um visitante consome a cota de
-todos, e o excedente recebe `503` (não `429`). O login já tem política própria com `429`
-(`Auth/LoginRateLimitPolicy.cs`), que serve de modelo. Nada foi iniciado.
+**C-7 — container roda como root.** `PortfolioApi/Dockerfile:8-13` não define `USER $APP_UID`, e
+a imagem final carrega `iproute2`, ferramenta de diagnóstico de rede sem uso em runtime. Nada foi
+iniciado. É a primeira tarefa do backlog que mexe em Docker e não em código de aplicação — vale
+verificar se o Render reconstrói a imagem sem intervenção antes de assumir que o deploy é
+transparente.
 
-Nota de contexto para quem for atacar o C-6: os testes de contato dependem do limite atual —
-`ContactEndpointTests` sobe **uma fábrica por teste** justamente porque a janela é por
-aplicação (design D-7 da `contact-input-validation`). Se o C-6 particionar por IP, essa
-precaução pode ser simplificada.
-
-Depois do C-6, o backlog segue em `codebase/CONCERNS.md` → C-7..C-13, de cima para baixo.
+Depois do C-7, o backlog segue em `codebase/CONCERNS.md` → C-8..C-13, de cima para baixo.
 
 ## Bloqueios ativos
 
@@ -43,20 +36,25 @@ Nenhum.
 
 ## Decidido nesta sessão
 
-`frontend/assets/files.zip` (28 KB, binário) entrou no repositório por engano no commit
-`974d1df` — estava não rastreado de propósito desde 2026-08-20. Levado ao usuário em
-2026-08-26; ele decidiu **deixar como está**. Não é para "consertar" numa sessão futura.
+Entre três desenhos para o C-6, o usuário escolheu o **encadeado** (3/min por visitante + teto de
+20/min) em vez de só particionar por IP. O motivo: partição por IP sozinha deixaria quem alcança a
+API sem passar pelo proxy do Render forjar o `X-Forwarded-For` e enviar sem limite nenhum, e o
+endpoint dispara e-mail de verdade. O custo aceito é o teto ainda poder ser esgotado — o C-6 sobe
+a barra de 3 para 20 requisições, não desaparece.
 
 ## Não commitado
 
-Nada. `.specs/features/contact-input-validation/` entrou no commit do C-5, como planejado.
+Nada.
 
 ## Fora do repositório, esperando o usuário
 
+- **Confirmar em produção que o proxy do Render anexa `X-Forwarded-For`.** Não é verificável a
+  partir do repositório. Se ele não anexar, o limitador degrada para uma partição só (o
+  comportamento anterior ao C-6) — nunca para "sem limite". Teste: quatro envios seguidos do
+  formulário em menos de um minuto de um dispositivo, e um envio de outra rede logo depois; o
+  segundo dispositivo tem de passar.
 - **Deploy da `admin-panel` depende de duas variáveis novas no Render:**
   `Admin__PasswordHash` (gerado por `dotnet run -- hash-password <senha>`) e
-  `Admin__JwtSigningKey` (≥ 32 bytes). Sem elas a área admin fica **fechada** — login e escrita
-  respondem 401. Ver AD-013 e `codebase/INTEGRATIONS.md`.
+  `Admin__JwtSigningKey` (≥ 32 bytes). Sem elas a área admin fica **fechada** (401).
 - C-12: confirmar no console que as regras do Firestore negam acesso de cliente
-  (`allow read, write: if false;`) e que a service account tem papel *Cloud Datastore User*,
-  não Editor/Owner.
+  (`allow read, write: if false;`) e que a service account tem papel *Cloud Datastore User*.

@@ -1,16 +1,17 @@
 // ─── FASE 1: Services ───────────────────────
 
-using System.Threading.RateLimiting;
 using Google.Apis.Auth.OAuth2;
 using Google.Api.Gax;
 using Google.Cloud.Firestore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Portfolio.Data;
 using Portfolio.Endpoints;
 using Portfolio.Services;
 using Portfolio.Auth;
+using Portfolio.RateLimiting;
 using Scalar.AspNetCore;
 
 // Gerador do valor de Admin__PasswordHash. Roda antes de qualquer coisa de servidor web e sai:
@@ -88,17 +89,37 @@ builder.Services
     .AddJwtBearer(options => options.TokenValidationParameters = AdminTokenService.ValidationParameters(adminOptions));
 builder.Services.AddAuthorization();
 
+// Atrás do proxy do Render o IP do visitante só existe no X-Forwarded-For, e sem isto o
+// RemoteIpAddress é o do proxy — todo mundo na mesma partição, que era o C-6.
+// Os defaults não servem: ForwardedHeaders é None e KnownProxies traz só o loopback, então
+// UseForwardedHeaders sem configuração é inerte fora de localhost (verificado).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
+
+    // ForwardLimit = 1 (o padrão, explícito por ser a garantia): o middleware lê a entrada mais
+    // à DIREITA do cabeçalho, a que o proxy anexou. Subir para 2 o faz andar um salto à esquerda
+    // e passar a acreditar no que o cliente escreveu — aí sim a partição vira falsificável.
+    options.ForwardLimit = 1;
+
+    // O container do Render só é alcançável pelo proxy deles, e o IP desse proxy não é estável o
+    // bastante para virar lista mantida à mão.
+    options.KnownProxies.Clear();
+    options.KnownNetworks.Clear();
+});
+
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddFixedWindowLimiter("contact", opt =>
-    {
-        opt.PermitLimit = 3;
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 0;
-    });
+    // 429 é a resposta certa para excesso de requisições; o padrão do limitador é 503, que
+    // anuncia "serviço fora do ar". Vale para todas as políticas — inclusive a do login, cujo
+    // OnRejected (D-10 do admin-panel) passou a ser redundante, não errado.
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    // Política própria para o login: 429 em vez do 503 global, sem alterar a de contato (D-10).
+    // Encadeamento do C-6: janela por visitante e teto do endpoint, nesta ordem. Registrado como
+    // GlobalLimiter em vez de política do endpoint porque é a única forma de garantir que uma
+    // recusa por visitante não consuma o teto — ver ContactRateLimiter.
+    options.GlobalLimiter = ContactRateLimiter.Criar();
+
     options.AddPolicy(LoginRateLimitPolicy.Name, new LoginRateLimitPolicy());
 });
 
@@ -133,6 +154,10 @@ else
 {
     app.UseExceptionHandler();
 }
+
+// Primeiro de todos: o rate limit particiona por RemoteIpAddress, e qualquer log de IP antes
+// disto registraria o proxy no lugar do visitante.
+app.UseForwardedHeaders();
 
 app.UseCors("Frontend");
 app.UseRateLimiter();

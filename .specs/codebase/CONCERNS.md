@@ -43,7 +43,8 @@ padrão, sem `dangerouslySetInnerHTML`, com `rel="noopener noreferrer"` em todo 
 — Next 16.3.1, `npm audit --omit=dev` em zero. Ver a entrada de 2026-08-18 no `JOURNAL.md`.
 
 **Item 2 (C-5, validação de entrada no contato) foi RESOLVIDO** em 2026-08-26 — ver o próprio
-C-5 abaixo. **O próximo item da ordem acordada é o C-6** (rate limit global, não por visitante).
+C-5 abaixo. **Item 3 (C-6) foi RESOLVIDO** em 2026-08-26. **O próximo item da ordem acordada é o
+C-7** (container roda como root).
 
 ## C-5: `POST /api/contact` aceita entrada sem limite nem formato — RESOLVIDO (2026-08-26)
 Os `[Required]` de `Models/ContactMessage.cs:7-12` são decorativos: Minimal API do .NET 9 não
@@ -59,12 +60,20 @@ teto de 32 KB (`:43`), contra os 30 MB do padrão do Kestrel. A checagem manual 
 handler — havia virado código morto atrás do filtro. Cobertura: `ContactEndpointTests.cs`,
 15 testes; o `413` tem evidência contra Kestrel real na pasta da feature.
 
-## C-6: Rate limit é global, não por visitante — MÉDIO
-`AddFixedWindowLimiter("contact", ...)` em `Program.cs:64-70` cria **uma única partição**: os
-3 req/min valem para o endpoint inteiro somando todos os visitantes. Três requisições de um
-script deixam o formulário indisponível para todo mundo até a janela virar. Particionar por IP
-não resolve sozinho: falta `UseForwardedHeaders`, então atrás do proxy do Render o
-`RemoteIpAddress` é o proxy, não o visitante — as duas mudanças andam juntas.
+## C-6: Rate limit é global, não por visitante — RESOLVIDO (2026-08-26)
+`AddFixedWindowLimiter("contact", ...)` criava **uma única partição**: os 3 req/min valiam para o
+endpoint inteiro somando todos os visitantes, e o excedente recebia `503`. Três requisições de um
+script deixavam o formulário indisponível para todo mundo até a janela virar.
+
+**Resolvido** pela feature `features/contact-rate-limit-por-visitante`: `UseForwardedHeaders`
+configurado (`Program.cs:97-109`, `X-Forwarded-For`, `ForwardLimit = 1`, listas de proxy limpas)
+faz o `RemoteIpAddress` ser o do visitante, e `RateLimiting/ContactRateLimiter.cs` encadeia
+3/min por visitante com 20/min no endpoint inteiro. `RejectionStatusCode` global passou a `429`
+(`Program.cs:116`). Cobertura: `ContactRateLimitTests.cs`, 8 testes (RL-01..RL-07).
+
+Duas coisas que **não** foram fechadas junto, de propósito: o rate limit do login segue com
+partição única (`Auth/LoginRateLimitPolicy.cs`), e não há `Retry-After` na resposta 429 — o fixed
+window não emite a metadata. Ambas em Ideias Adiadas.
 
 ## C-7: Container roda como root — MÉDIO
 `PortfolioApi/Dockerfile:8-13` não define `USER $APP_UID`. A imagem final também carrega
@@ -82,8 +91,9 @@ nenhum. É intencional (evita derrubar o endpoint por config faltando) e hoje pr
 configurada (ver B-003), mas qualquer perda futura da env var vira perda silenciosa de contato.
 
 ## C-10: Formulário sem anti-spam — MÉDIO
-Não há honeypot nem captcha. A única barreira é o rate limit de C-6, que paga com
-disponibilidade o que entrega em proteção.
+Não há honeypot nem captcha. A única barreira é o rate limit do C-6 — que desde 2026-08-26 já não
+paga a disponibilidade de todos pela proteção, mas continua sem impedir robô educado: 3 mensagens
+por minuto por IP são mais que suficientes para saturar a cota do Resend (100 e-mails/dia).
 
 ## C-11: Achados de baixa severidade — BAIXO
 - `PortfolioApi/appsettings.Development.json:10-11` versiona uma connection string de Postgres

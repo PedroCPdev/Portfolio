@@ -74,5 +74,42 @@ os tokens emitidos** — é o botão de revogação de emergência. A duração 
 **O que a área administrativa não cobre:** salvar não atualiza o site na hora — a home usa ISR de
 60s (`next: { revalidate: 60 }`), então a mudança aparece em até um minuto. Não há upload de
 imagem (`imageUrl` é URL digitada), rascunho, histórico de versões, log de auditoria nem
-recuperação de senha: a senha esquecida se resolve gerando outro hash. E o rate limit do login é
-do endpoint, não por visitante (C-6) — quem esgotar a janela deixa o admin um minuto sem entrar.
+recuperação de senha: a senha esquecida se resolve gerando outro hash. E o rate limit do login continua
+sendo do endpoint, não por visitante — o C-6 mudou isso só no contato, então quem esgotar a janela
+do login ainda deixa o admin um minuto sem entrar.
+
+## Rate limit do formulário de contato
+
+**Não depende de configuração no Render.** Os números vivem no código
+(`PortfolioApi/RateLimiting/ContactRateLimiter.cs:26,34`).
+
+O que dispara: toda requisição que chega na API — o limitador é registrado como `GlobalLimiter`
+(`Program.cs:121`) e roda no pipeline antes dos endpoints. Ele mesmo decide se a requisição lhe
+interessa: só `POST`/qualquer método em `/api/contact` entra numa janela; para `/health`,
+`/api/projects` e o login ele devolve `NoLimiter` e a requisição passa direto.
+
+A ordem, quando é o contato:
+
+1. `UseForwardedHeaders` (`Program.cs:160`, primeiro middleware) troca o `RemoteIpAddress` — que
+   atrás do proxy do Render seria o do proxy — pelo endereço mais à direita do `X-Forwarded-For`,
+   que é o que o proxy anexou. `ForwardLimit = 1` é o que garante isso: com 2, o middleware
+   andaria um salto e passaria a acreditar no valor que o cliente escreveu.
+2. **Janela do visitante:** 3 requisições por minuto na partição daquele IP. Estourou → `429`, e
+   o encadeamento para aqui — o teto do passo 3 **não** é consultado.
+3. **Teto do endpoint:** 20 requisições aceitas por minuto somando todo mundo. É o que limita
+   quem alcança a aplicação sem passar pelo proxy e pode escrever qualquer `X-Forwarded-For`.
+
+Sem `X-Forwarded-For` (ou com valor malformado) todos caem numa partição só e o limite continua
+valendo — degrada para o comportamento anterior ao C-6, nunca para "sem limite".
+
+Para saber que está vivo: quatro envios seguidos do mesmo navegador em menos de um minuto — o
+quarto tem de voltar `429`. No formulário do site isso aparece como a mensagem de erro de envio.
+
+Para mexer: `PorVisitantePorMinuto` e `TetoDoEndpointPorMinuto` em
+`RateLimiting/ContactRateLimiter.cs`. Para desligar, remover `options.GlobalLimiter` de
+`Program.cs`. A janela é fixa (não deslizante): ela zera de uma vez, não gradualmente.
+
+**O que este mecanismo não cobre:** spam bem-formado dentro da cota — três mensagens por minuto
+por IP saturam a cota do Resend (100 e-mails/dia) sem nunca esbarrar no limite; isso é o C-10.
+Também não emite `Retry-After`, então o cliente não sabe quanto falta para a janela virar. E o
+login tem política própria, com partição única, que este mecanismo não alcança.

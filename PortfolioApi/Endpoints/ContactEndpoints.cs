@@ -8,6 +8,13 @@ namespace Portfolio.Endpoints;
 public static class ContactEndpoints
 {
     /// <summary>
+    /// Rota do endpoint. É constante porque o limitador do C-6
+    /// (<c>RateLimiting/ContactRateLimiter.cs</c>) reconhece a requisição pelo caminho — renomear
+    /// a rota com o caminho escrito à mão nos dois lugares desligaria o rate limit em silêncio.
+    /// </summary>
+    public const string Rota = "/api/contact";
+
+    /// <summary>
     /// Pior caso legítimo é ~16 KB (mensagem de 4000 chars em UTF-8 + os outros campos). O dobro
     /// de folga, e ainda 1000× menor que os 30 MB que o Kestrel aceita por padrão. Metadata do
     /// endpoint, não limite global no Kestrel: um teto global valeria para qualquer endpoint
@@ -20,7 +27,10 @@ public static class ContactEndpoints
         // A validação do corpo é do ValidationFilter, não daqui: os limites vivem declarados em
         // ContactMessage, que é onde se lê o contrato. Antes, a única checagem era um
         // IsNullOrWhiteSpace de Email e Message escrito neste handler — o resto passava.
-        app.MapPost("/api/contact", async (ContactMessage message, EmailService emailService, ILogger<Program> logger) =>
+        // O rate limit não aparece aqui: desde o C-6 são duas camadas encadeadas (3/min por
+        // visitante + 20/min no endpoint), e a ordem de aquisição só é expressável fora da
+        // política de endpoint — ver RateLimiting/ContactRateLimiter.cs e o design D-2.
+        app.MapPost(Rota, async (ContactMessage message, EmailService emailService, ILogger<Program> logger) =>
             {
                 logger.LogInformation("[Contact] From: {Name} <{Email}>", message.Name, message.Email);
 
@@ -40,7 +50,6 @@ public static class ContactEndpoints
             })
             .WithTags("Contact")
             .AddEndpointFilter<ValidationFilter<ContactMessage>>()
-            .WithMetadata(new RequestSizeLimitAttribute(LimiteDoCorpoEmBytes))
-            .RequireRateLimiting("contact");
+            .WithMetadata(new RequestSizeLimitAttribute(LimiteDoCorpoEmBytes));
     }
 }

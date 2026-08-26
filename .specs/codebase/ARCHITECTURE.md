@@ -9,7 +9,8 @@ Visitante → Vercel (Next.js server component)
                         ├─ GET  /api/projects       → FirestoreProjectStore → Cloud Firestore
                         ├─ GET  /api/projects/{id}  → FirestoreProjectStore → Cloud Firestore
                         ├─ POST /api/contact        → ValidationFilter → EmailService → Resend
-                        │                             (rate limit 3/min, corpo ≤ 32 KB)
+                        │                             (3/min por visitante + 20/min no endpoint,
+                        │                              429 no excedente, corpo ≤ 32 KB)
                         └─ GET  /health             → responde sem tocar no Firestore
                                                       ↑
 GitHub Actions (keep-api-awake, a cada 10 min das 08:00 às 00:00 BRT) ──────┘
@@ -47,10 +48,13 @@ leitura do Firestore (AD-006). Fica fora do OpenAPI via `ExcludeFromDescription(
 
 ## Program.cs — 3 fases
 1. **Services**: OpenAPI, ProblemDetails, CORS (`"Frontend"`), `FirestoreDb` singleton,
-   `FirestoreProjectStore`, EmailOptions/EmailService, RateLimiter (`"contact"`, 3/min).
+   `FirestoreProjectStore`, EmailOptions/EmailService, ForwardedHeaders (X-Forwarded-For, listas
+   de proxy limpas) e RateLimiter (`GlobalLimiter` = encadeado do contato; política
+   `"admin-login"`; `RejectionStatusCode` 429).
 2. **Seed**: `DataSeeder.SeedAsync` — idempotente, só popula se a coleção estiver vazia.
    Falha de seed **não derruba a aplicação** (ver AD-003).
-3. **Pipeline + Endpoints**: Scalar em `/scalar` só em Development; CORS; RateLimiter; endpoints
+3. **Pipeline + Endpoints**: Scalar em `/scalar` só em Development; `UseForwardedHeaders` antes de
+   tudo (o rate limit particiona por `RemoteIpAddress`); CORS; RateLimiter; endpoints
    (`MapProjectsEndpoints`, `MapContactEndpoints`, `MapHealthEndpoints`).
 
 ## Decisão-chave: sem migrations
