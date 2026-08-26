@@ -8,7 +8,8 @@ Visitante → Vercel (Next.js server component)
                    → Render (ASP.NET Core Minimal API)
                         ├─ GET  /api/projects       → FirestoreProjectStore → Cloud Firestore
                         ├─ GET  /api/projects/{id}  → FirestoreProjectStore → Cloud Firestore
-                        ├─ POST /api/contact        → EmailService → Resend  (rate limit 3/min)
+                        ├─ POST /api/contact        → ValidationFilter → EmailService → Resend
+                        │                             (rate limit 3/min, corpo ≤ 32 KB)
                         └─ GET  /health             → responde sem tocar no Firestore
                                                       ↑
 GitHub Actions (keep-api-awake, a cada 10 min das 08:00 às 00:00 BRT) ──────┘

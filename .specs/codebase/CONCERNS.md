@@ -42,12 +42,22 @@ padrão, sem `dangerouslySetInnerHTML`, com `rel="noopener noreferrer"` em todo 
 **Item 1 do backlog (CVEs high nas dependências do frontend) foi RESOLVIDO** no commit `602d02b`
 — Next 16.3.1, `npm audit --omit=dev` em zero. Ver a entrada de 2026-08-18 no `JOURNAL.md`.
 
-## C-5: `POST /api/contact` aceita entrada sem limite nem formato — ALTO
+**Item 2 (C-5, validação de entrada no contato) foi RESOLVIDO** em 2026-08-26 — ver o próprio
+C-5 abaixo. **O próximo item da ordem acordada é o C-6** (rate limit global, não por visitante).
+
+## C-5: `POST /api/contact` aceita entrada sem limite nem formato — RESOLVIDO (2026-08-26)
 Os `[Required]` de `Models/ContactMessage.cs:7-12` são decorativos: Minimal API do .NET 9 não
 executa DataAnnotations automaticamente. A validação real é a checagem manual de
 `Endpoints/ContactEndpoints.cs:12-14`, que só rejeita Email e Message vazios. Não há teto de
 tamanho (o Kestrel aceita 30 MB por padrão), nem validação de formato de e-mail, nem qualquer
 checagem de `Name` — que vai direto para o *subject* enviado ao Resend.
+
+**Resolvido** pela feature `features/contact-input-validation`: `ContactMessage` declara
+`[NotBlank]`, `[StringLength]` (80/254/4000) e `[EmailAddress]`, e quem os executa é o
+`ValidationFilter<ContactMessage>` pendurado em `Endpoints/ContactEndpoints.cs:42`. O corpo tem
+teto de 32 KB (`:43`), contra os 30 MB do padrão do Kestrel. A checagem manual de vazio saiu do
+handler — havia virado código morto atrás do filtro. Cobertura: `ContactEndpointTests.cs`,
+15 testes; o `413` tem evidência contra Kestrel real na pasta da feature.
 
 ## C-6: Rate limit é global, não por visitante — MÉDIO
 `AddFixedWindowLimiter("contact", ...)` em `Program.cs:64-70` cria **uma única partição**: os

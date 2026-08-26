@@ -260,6 +260,22 @@ da função chamada pelo efeito — `void carregar()` também é acusado. Os doi
 `useSyncExternalStore` para estado que vem de fora do React (foi o caso do `sessionStorage`), e
 `setState` dentro do callback da promessa (`.then`), não no corpo do efeito.
 
+### L-011: teste que não pode falhar é pior que teste ausente
+CT-01..CT-03 exigiam "não deve chamar o Resend". Com `Email:ApiKey` vazio o `EmailService`
+degrada em silêncio (`EmailService.cs:25`) e **nunca** chamaria nada — a asserção passaria
+verde para sempre, inclusive com a validação removida. A correção foi configurar o e-mail no
+teste e trocar o handler HTTP por um espião
+(`ConfigureHttpClientDefaults` → `ConfigurePrimaryHttpMessageHandler`), que conta chamadas e
+não toca a rede; verificado por protótipo antes de entrar. Regra que fica: quando o requisito é
+"não faz X", verifique primeiro se o teste conseguiria ver X acontecendo.
+
+### L-012: `ConfigureHttpClientDefaults` alcança o cliente sem nome do `IHttpClientFactory`
+`services.ConfigureHttpClientDefaults(b => b.ConfigurePrimaryHttpMessageHandler(...))` vale
+também para `CreateClient()` sem nome, que é o que o `EmailService` usa. Dentro de um
+`WebApplicationFactory` isso vai em `builder.ConfigureTestServices(...)`, que roda depois das
+registrações do `Program.cs` e por isso ganha. É o ponto de interceptação de qualquer chamada
+HTTP de saída da API em teste, sem precisar injetar abstração nova no código de produção.
+
 ## Ideias Adiadas
 
 - **A lista Core do About continua sendo o sinal `.NET` mais forte da página.** Depois do

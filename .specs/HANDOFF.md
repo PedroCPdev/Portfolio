@@ -3,11 +3,16 @@
 > Ponteiro para retomar rápido, não resumo completo. Sempre sobrescrito — o histórico é o `JOURNAL.md`.
 
 **Data/sessão:** 2026-08-26
-**Branch:** `main`, **12 commits à frente de `origin/main`** (nada foi enviado ainda)
-**Feature ativa:** nenhuma. A `admin-panel` fechou; a próxima é **C-5**, ainda não iniciada.
+**Branch:** `main`, **14 commits à frente de `origin/main`** (nada foi enviado ainda)
+**Feature ativa:** nenhuma. `admin-panel` e C-5 fecharam; o próximo item é **C-6**.
 
 ## Concluído
 
+- **C-5 — validação de entrada no `POST /api/contact` — fechado em 2026-08-26.**
+  `ContactMessage` declara os limites (80/254/4000 + formato de e-mail), o
+  `ValidationFilter<ContactMessage>` os executa e o corpo tem teto de 32 KB. 15 testes novos
+  (`ContactEndpointTests.cs`), CT-01..CT-05 verificados na matriz do `spec.md`, e o `413` com
+  evidência contra Kestrel real. Gate `quick`: API 71 → **86**, zero pulados.
 - **Feature `admin-panel` (T1..T13) — fechada.** Senha PBKDF2 + JWT na própria API, escrita
   autenticada em `/api/projects`, painel `/admin` no frontend com editor de decisões e
   confirmação de exclusão por título. 22/22 requisitos verificados na matriz do `spec.md`.
@@ -20,35 +25,31 @@
 
 ## Pendente (próximo passo)
 
-**C-5 — validação de entrada no `POST /api/contact`.** Ficou muito mais barato do que a spec de
-2026-08-18 previa: a `admin-panel` já construiu o `ValidationFilter<T>`, o `NotBlankAttribute`,
-a fábrica de teste HTTP (`PortfolioApi.Tests/AdminApiFactory.cs`) e o
-`public partial class Program;`. **Releia `features/contact-input-validation/design.md` antes de
-implementar — a spec e o design são anteriores a essas peças e superestimam o trabalho.**
+**C-6 — rate limit global, não por visitante.** `Program.cs:93-99` usa uma janela fixa de 3
+requisições/min para o endpoint `/api/contact` **inteiro**: um visitante consome a cota de
+todos, e o excedente recebe `503` (não `429`). O login já tem política própria com `429`
+(`Auth/LoginRateLimitPolicy.cs`), que serve de modelo. Nada foi iniciado.
 
-O que sobrou de fato: anotar `Models/ContactMessage.cs` com DataAnnotations, pendurar
-`ValidationFilter<ContactMessage>` em `Endpoints/ContactEndpoints.cs`, limitar o corpo, e os
-testes de CT-01..CT-05. A pergunta de aprovação que travou a sessão de 08-18 (aceitar
-`Microsoft.AspNetCore.Mvc.Testing` no projeto de teste) **já está respondida na prática**: a
-dependência entrou com a `admin-panel` e está em uso.
+Nota de contexto para quem for atacar o C-6: os testes de contato dependem do limite atual —
+`ContactEndpointTests` sobe **uma fábrica por teste** justamente porque a janela é por
+aplicação (design D-7 da `contact-input-validation`). Se o C-6 particionar por IP, essa
+precaução pode ser simplificada.
 
-Depois do C-5, o backlog segue em `codebase/CONCERNS.md` → C-6..C-13, de cima para baixo.
+Depois do C-6, o backlog segue em `codebase/CONCERNS.md` → C-7..C-13, de cima para baixo.
 
 ## Bloqueios ativos
 
 Nenhum.
 
-## Achado que precisa de decisão do usuário
+## Decidido nesta sessão
 
 `frontend/assets/files.zip` (28 KB, binário) entrou no repositório por engano no commit
-`974d1df` — ele estava não rastreado de propósito desde 2026-08-20, para o usuário decidir se
-entrava. Como os 12 commits ainda **não foram enviados**, dá para removê-lo reescrevendo o
-histórico ou num commit novo de remoção. Não foi mexido: é decisão do usuário.
+`974d1df` — estava não rastreado de propósito desde 2026-08-20. Levado ao usuário em
+2026-08-26; ele decidiu **deixar como está**. Não é para "consertar" numa sessão futura.
 
 ## Não commitado
 
-- `.specs/features/contact-input-validation/` (spec.md + design.md), ainda não rastreados.
-  Deliberado: vão no mesmo commit da implementação do C-5, para o commit contar uma história só.
+Nada. `.specs/features/contact-input-validation/` entrou no commit do C-5, como planejado.
 
 ## Fora do repositório, esperando o usuário
 

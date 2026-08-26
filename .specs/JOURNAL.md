@@ -5,6 +5,75 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-26 — Validação de entrada no POST /api/contact (C-5)
+
+O formulário de contato deixou de aceitar qualquer coisa: nome e mensagem sem teto, e-mail em
+qualquer formato e corpo de até 30 MB agora são recusados com `400` antes de virar e-mail, e o
+corpo tem limite de 32 KB imposto pelo servidor.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `PortfolioApi/Models/ContactMessage.cs:18-32` | modificado | os limites passam a viver onde se lê o contrato: `[NotBlank]`, `[StringLength]` 80/254/4000 e `[EmailAddress]`, com mensagem em inglês porque o texto vai para a tela do visitante |
+| `PortfolioApi/Endpoints/ContactEndpoints.cs:42-43` | modificado | pendura o `ValidationFilter<ContactMessage>` e declara o teto de 32 KB — sem o filtro, atributo no model é decoração |
+| `PortfolioApi/Endpoints/ContactEndpoints.cs:20-25` | modificado | sai a checagem manual de `IsNullOrWhiteSpace` do handler: atrás do filtro ela virou código morto |
+| `PortfolioApi.Tests/ContactEndpointTests.cs` | criado | 15 testes de CT-01..CT-05 por HTTP, com espião no lugar do Resend |
+| `.specs/features/contact-input-validation/spec.md` | modificado | matriz de rastreabilidade preenchida com `arquivo:linha`, 5 de 5 verificados |
+| `.specs/features/contact-input-validation/design.md` | modificado | revisão de 08-26: o que a `admin-panel` já tinha construído, D-6 revogada na forma, D-8 e D-9 novas |
+| `.specs/features/contact-input-validation/evidencias/20260826-limite-de-corpo-contato-kestrel.md` | criado | o `413` não é observável em TestServer; a prova é execução contra Kestrel real |
+| `.specs/codebase/CONCERNS.md` | modificado | C-5 marcado RESOLVIDO e o ponteiro do backlog movido para o C-6 |
+| `.specs/codebase/ARCHITECTURE.md:11-12` | modificado | o fluxo do contato passa pelo filtro; o diagrama dizia que ia direto ao EmailService |
+| `.specs/codebase/TESTING.md:13` | modificado | contagem verdadeira: 159 → 174 |
+| `.specs/project/ROADMAP.md` · `STATE.md` | modificado | item 2 do backlog concluído; L-011 e L-012 |
+| `.specs/HANDOFF.md` | modificado | próximo item é o C-6, com a nota de que os testes de contato dependem da janela atual |
+| `CLAUDE.md:58` | modificado | descrevia o endpoint como "validates, sends" sem dizer o que valida |
+
+**Como funciona — validação do corpo do contato**
+
+```
+POST /api/contact → Kestrel (teto de 32 KB) → rate limiter (3/min) → ValidationFilter → handler → Resend
+```
+
+1. **Dispara** a cada `POST /api/contact` — sob demanda, sem agendamento. O teto de corpo é
+   declarado em `ContactEndpoints.cs:16,43` e o filtro em `:42`.
+2. O Kestrel corta o corpo acima de 32 KB antes de desserializar (`413`, sem corpo de resposta).
+   Passando daí, o `ValidationFilter<ContactMessage>` (`Validation/ValidationFilter.cs:20`) roda
+   as DataAnnotations do model e, em falha, devolve `400 { success, error }` — o mesmo shape que
+   `frontend/src/lib/api.ts` já lê para mostrar o erro ao visitante. Só então o handler roda,
+   loga e chama o Resend.
+3. **Está vivo** se um `POST` com e-mail malformado devolve `400` com `"Email must be a valid
+   email address."` no campo `error`. No log da API, requisição recusada **não** produz linha
+   `[Contact] From: ...` — a ausência dessa linha é o sinal de que a barreira agiu antes do handler.
+4. **Para mexer ou desligar:** os limites são os atributos em `ContactMessage.cs:18-32`; o teto de
+   corpo é a constante em `ContactEndpoints.cs:16`. Remover `.AddEndpointFilter` de `:42` desliga
+   a validação inteira e devolve o endpoint ao estado do C-5 (12 dos 15 testes ficam vermelhos).
+
+**Não cobre:** spam bem-formado (C-10 segue aberto — validar formato não impede robô educado);
+o `reply_to` continua podendo declarar o e-mail de outra pessoa; e o rate limit segue global,
+não por visitante (C-6, próximo item). O formulário do frontend **não** ganhou `maxLength`: quem
+digitar 5000 caracteres só descobre no envio.
+
+**O teste que quase não podia falhar.** CT-01..CT-03 exigem "não deve chamar o Resend". Com
+`Email:ApiKey` vazio — que é como as fábricas de teste já subiam a aplicação — o `EmailService`
+degrada em silêncio e nunca chamaria nada: a asserção passaria verde para sempre, inclusive com
+a validação removida. A correção foi configurar o e-mail no teste e trocar o handler HTTP por um
+espião que conta chamadas e não toca a rede. Virou L-011 e L-012 em `STATE.md`.
+
+**Por que este item saiu barato.** A spec e o design são de 2026-08-18 e previam construir o
+`ValidationFilter<T>`, adotar `Microsoft.AspNetCore.Mvc.Testing` e tornar `Program` público. A
+feature `admin-panel` (08-24) já tinha feito as três coisas por conta própria — aqui foi só
+reúso. A pergunta de aprovação que pausou a sessão de 08-18 morreu por obsolescência. Uma
+decisão daquele design foi **revogada**: apontar `FIRESTORE_EMULATOR_HOST` para porta morta
+derrubaria os testes de integração em paralelo, porque a variável é global ao processo.
+
+**Não toquei:** o `maxLength` dos inputs de `ContactForm.tsx` — é UX, está fora de escopo
+declarado na spec, e a barreira que importa é a do servidor. O rate limit (C-6) e o anti-spam
+(C-10), que são itens próprios do backlog. E `ContactMessage` segue sem DTO, conforme C-4.
+
+**Gate `quick` (saída real, com emulador no ar):**
+`dotnet build` 0 warnings/0 errors · `dotnet test` **86 passed, 0 skipped** (era 71).
+Frontend rodado por conferência, intocado: `npm test` 88 passed. Total 174.
+Mutação de controle: removendo `.AddEndpointFilter`, 12 dos 15 testes novos ficam vermelhos.
+
 ## 2026-08-24/26 — Painel administrativo autenticado (feature `admin-panel`)
 
 Cadastrar, editar e excluir projeto deixou de ser digitação manual no console do Firebase e

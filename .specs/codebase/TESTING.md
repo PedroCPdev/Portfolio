@@ -10,7 +10,7 @@
 |---|---|---|
 | `build` | `cd PortfolioApi && dotnet build` | compila a API |
 | `quick` | `cd PortfolioApi.Tests && dotnet test` | unit + integração (exige emulador) |
-| `full` | `quick` + `cd frontend && npm test && npm run build && npm run lint` | tudo (**159 testes: 71 na API, 88 no frontend**, medido em 2026-08-24) |
+| `full` | `quick` + `cd frontend && npm test && npm run build && npm run lint` | tudo (**174 testes: 86 na API, 88 no frontend**, medido em 2026-08-26) |
 
 ## Emulador Firestore (obrigatório para os testes de integração)
 
