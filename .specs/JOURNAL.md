@@ -5,6 +5,55 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-08-27 — Painel admin em produção, e limpeza do zip de rascunho
+
+Os 13 commits da `admin-panel` e os 2 do rate limit de contato saíram da máquina e foram para
+produção. `/admin` responde, o login com a senha real devolve token e o cadastro de projeto pela
+tela funciona — confirmado pelo usuário. Junto foi o `files.zip` que estava sobrando na árvore.
+
+| Arquivo | Ação | Por quê |
+|---|---|---|
+| `frontend/assets/files.zip` | removido | rascunho de favicon que entrou por engano no `974d1df`; sem referência em `src/`, `next.config` ou `package.json` — verificado por grep antes de remover. A pasta `frontend/assets/` sumiu junto, era o único arquivo |
+
+**Como funciona — sessão do admin, agora em operação**
+
+O mecanismo já está descrito no presente em `codebase/INTEGRATIONS.md` e na entrada de 08-24/26.
+O que muda aqui é só o estado: as duas variáveis que faltavam existem no Render, então
+`AdminOptions.IsConfigured` passou a ser verdadeiro e a área abriu. Antes deste deploy o código
+do admin nem estava no `origin/main` — as variáveis, sozinhas, não faziam nada.
+
+**Evidência de produção (saída real, medida daqui):**
+```
+GET https://pedrocpdev.vercel.app/admin  → 200
+    <meta name="robots" content="noindex, nofollow, nocache">
+GET https://pedrocpdev.vercel.app/       → 200, 0 ocorrências de "/admin" no HTML
+```
+Os dois invariantes que o `design-system.test.ts` guarda continuam valendo fora do teste: a rota
+não é indexável e nada público linka para ela. O login em si foi confirmado pelo usuário na tela
+— não é verificável daqui, porque exige a senha.
+
+**Não toquei:** o histórico do `974d1df` — o blob de 28 KB continua lá, e reescrever 16 commits
+por causa dele não se paga. O `.gitignore` também não mudou: a pasta deixou de existir, não há o
+que ignorar. E a revalidação sob demanda do ISR segue Ideia Adiada — uma alteração salva no
+painel continua aparecendo na home dentro da janela de 60s, não na hora.
+
+**Ressalva de segurança registrada:** durante a configuração eu imprimi no chat um hash de
+exemplo (senha literal `exemplo-descartavel`) e uma chave de assinatura, ambos em texto puro. O
+usuário foi avisado de que qualquer um dos dois, se colado no Render, é segredo publicado. Vale
+como convenção daqui em diante: exemplo de segredo em conversa nasce queimado, e o comando
+`dotnet run -- hash-password` existe justamente para a senha não passar por lugar nenhum.
+
+**Gate `full` (saída real, emulador no ar, antes do envio):**
+```
+dotnet test PortfolioApi.Tests → Failed: 0, Passed: 94, Skipped: 0, Total: 94
+npm test                        → 7 arquivos, 88 testes, 88 passed
+npm run build                   → exit 0, /admin na lista de rotas, 3 páginas SSG
+npm run lint                    → exit 0
+```
+
+**Commit:** `41cfa76`. O envio ao `origin` foi feito pelo usuário — o hook
+`block-dangerous-git.sh` barra esse comando partindo do agente, por decisão dele.
+
 ## 2026-08-26 — Rate limit do contato por visitante (C-6)
 
 Três requisições de um script deixaram de derrubar o formulário de contato para todo mundo: a
