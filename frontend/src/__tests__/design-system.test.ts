@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Ancorado no proprio arquivo de teste: o gate nao pode depender de onde o shell esta.
@@ -172,7 +172,7 @@ describe("PD-05 registro de decisão", () => {
     const offenders = sourceFiles()
       .filter((f) => f.includes("components"))
       .filter((f) => /clay/.test(readFileSync(f, "utf8")))
-      .map((f) => f.split("/").pop() as string)
+      .map((f) => basename(f))
       .filter((name) => !ALLOWED.has(name));
     expect(offenders, `clay usado fora do papel: ${offenders.join(", ")}`).toEqual([]);
   });
