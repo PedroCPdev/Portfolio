@@ -2,6 +2,14 @@
 
 Histórico de entregas, mais recente no topo. Entradas anteriores nunca são reescritas.
 
+## 2026-10-19 — Anti-spam no formulário de contato (C-10)
+
+Robô que preenche o campo escondido tem a mensagem descartada sem perceber, e a API envia no máximo 50 e-mails por dia. `7f751df`. Detalhes em `.specs/features/contact-anti-spam/RELEASE-NOTES.md`.
+
+## 2026-10-19 — Formulário avisa quando o e-mail está desligado (C-9)
+
+Sem a chave do Resend, o visitante passa a ver um erro que aponta para GitHub e LinkedIn, e a mensagem deixa de sumir em silêncio. O aviso de excesso de mensagens voltou a aparecer no 429. `c657179`.
+
 ## 2026-10-19 — Headers de segurança no frontend (C-8)
 
 O site passa a proibir ser embutido em frame de outra origem e limita com quem o navegador conversa: a própria origem e a API. Também envia `nosniff`, `Referrer-Policy` e `Permissions-Policy`. `b039f3a`.

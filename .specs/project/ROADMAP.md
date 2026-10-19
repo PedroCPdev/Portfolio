@@ -23,8 +23,8 @@
   item 3 (C-6, rate limit por visitante) concluído em 2026-08-26 —
   `features/contact-rate-limit-por-visitante`, 8 testes.
   Item 4 (C-7, container como root) concluído em 2026-10-19 — tarefa rápida `quick/001`.
-  Em 2026-10-19 também fecharam C-8, C-13 e quase todo o C-11.
-  **Abertos: C-9, C-10, `AllowedHosts` do C-11 e C-12.** C-13 entrou no backlog em 2026-08-24.
+  Em 2026-10-19 também fecharam C-8, C-9, C-10 (feature `contact-anti-spam`), C-13 e quase todo
+  o C-11. **Abertos: `AllowedHosts` do C-11 e C-12, os dois fora do repositório.** C-13 entrou no backlog em 2026-08-24.
   Este ponteiro existe porque `CONCERNS.md` não entra no carregamento base — sem ele,
   o backlog some numa troca de sessão.
 

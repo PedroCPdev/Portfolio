@@ -351,6 +351,7 @@ simplesmente permanece o da conexão.
 | 005 | C-11: e-mail fora do log, config morta, permissions, Dependabot, audit no CI | 2026-10-19 | `d420813`, `ed4998c` | ✅ Feito |
 | 006 | C-13: id com barra no GET devolve 404 | 2026-10-19 | `7d213c7` | ✅ Feito |
 | 007 | C-8: headers de segurança no frontend | 2026-10-19 | `b039f3a` | ✅ Feito |
+| 008 | C-9: contato sem e-mail configurado responde 503 | 2026-10-19 | `c657179` | ✅ Feito |
 
 ## Ideias Adiadas
 

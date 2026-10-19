@@ -44,8 +44,8 @@ padrão, sem `dangerouslySetInnerHTML`, com `rel="noopener noreferrer"` em todo 
 
 **Item 2 (C-5, validação de entrada no contato) foi RESOLVIDO** em 2026-08-26 — ver o próprio
 C-5 abaixo. **Item 3 (C-6) foi RESOLVIDO** em 2026-08-26. **Item 4 (C-7) foi RESOLVIDO** em
-2026-10-19. C-8, C-13 e quase todo o C-11 também, no mesmo dia. **Abertos: C-9, C-10, o
-`AllowedHosts` do C-11 e o C-12** (console).
+2026-10-19. C-8, C-9, C-10, C-13 e quase todo o C-11 também, no mesmo dia. **Abertos: o `AllowedHosts`
+do C-11 e o C-12**, os dois no console do Render e do Google Cloud.
 
 ## C-5: `POST /api/contact` aceita entrada sem limite nem formato — RESOLVIDO (2026-08-26)
 Os `[Required]` de `Models/ContactMessage.cs:7-12` são decorativos: Minimal API do .NET 9 não
@@ -94,16 +94,22 @@ sem `Referrer-Policy`.
 `security-headers.test.ts`. `script-src` mantém `'unsafe-inline'` (AD-017). Verificado no
 Chromium: `/`, `/admin` e `/projects/x` hidratam sem violação.
 
-## C-9: Envio de e-mail degrada em silêncio — MÉDIO
+## C-9: Envio de e-mail degrada em silêncio — RESOLVIDO (2026-10-19)
 `Services/EmailService.cs:25-31`: sem `Email:ApiKey` configurada, a API loga um warning e
 responde `{success: true}` — o visitante vê "Message sent!" e a mensagem não existe em lugar
 nenhum. É intencional (evita derrubar o endpoint por config faltando) e hoje produção está
 configurada (ver B-003), mas qualquer perda futura da env var vira perda silenciosa de contato.
 
-## C-10: Formulário sem anti-spam — MÉDIO
+**Resolução** (`c657179`): sem config o endpoint responde `503` com erro na tela e o startup avisa.
+No caminho apareceu um bug: o frontend tratava `503` como rate limit, que responde `429` desde o C-6.
+
+## C-10: Formulário sem anti-spam — RESOLVIDO (2026-10-19)
 Não há honeypot nem captcha. A única barreira é o rate limit do C-6 — que desde 2026-08-26 já não
 paga a disponibilidade de todos pela proteção, mas continua sem impedir robô educado: 3 mensagens
 por minuto por IP são mais que suficientes para saturar a cota do Resend (100 e-mails/dia).
+
+**Resolução** (`7f751df`, feature `contact-anti-spam`): honeypot `website` e teto de 50 e-mails
+por dia UTC, contado em memória.
 
 ## C-11: Achados de baixa severidade — PARCIAL (2026-10-19)
 - `PortfolioApi/appsettings.Development.json:10-11` versiona uma connection string de Postgres
