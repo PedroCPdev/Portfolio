@@ -22,7 +22,8 @@
   `POST /api/contact`) concluído em 2026-08-26 — `features/contact-input-validation`, 15 testes;
   item 3 (C-6, rate limit por visitante) concluído em 2026-08-26 —
   `features/contact-rate-limit-por-visitante`, 8 testes.
-  **O próximo é o C-7** (container roda como root). C-13 entrou no backlog em 2026-08-24.
+  Item 4 (C-7, container como root) concluído em 2026-10-19 — tarefa rápida `quick/001`.
+  **O próximo é o C-8** (frontend sem headers de segurança). C-13 entrou no backlog em 2026-08-24.
   Este ponteiro existe porque `CONCERNS.md` não entra no carregamento base — sem ele,
   o backlog some numa troca de sessão.
 

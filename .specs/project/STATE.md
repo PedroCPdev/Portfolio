@@ -329,6 +329,12 @@ Com as listas limpas, o middleware consome a entrada **mais à direita** do `X-F
 acreditar no valor escrito pelo cliente. Valor malformado não vira partição lixo — o IP
 simplesmente permanece o da conexão.
 
+## Tarefas Rápidas Concluídas
+
+| #   | Descrição | Data | Commit | Status |
+| --- | --- | --- | --- | --- |
+| 001 | Container da API roda sem root (C-7) | 2026-10-19 | `e3ef82d` | ✅ Feito |
+
 ## Ideias Adiadas
 
 - **A lista Core do About continua sendo o sinal `.NET` mais forte da página.** Depois do

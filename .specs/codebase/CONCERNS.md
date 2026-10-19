@@ -43,8 +43,8 @@ padrão, sem `dangerouslySetInnerHTML`, com `rel="noopener noreferrer"` em todo 
 — Next 16.3.1, `npm audit --omit=dev` em zero. Ver a entrada de 2026-08-18 no `JOURNAL.md`.
 
 **Item 2 (C-5, validação de entrada no contato) foi RESOLVIDO** em 2026-08-26 — ver o próprio
-C-5 abaixo. **Item 3 (C-6) foi RESOLVIDO** em 2026-08-26. **O próximo item da ordem acordada é o
-C-7** (container roda como root).
+C-5 abaixo. **Item 3 (C-6) foi RESOLVIDO** em 2026-08-26. **Item 4 (C-7) foi RESOLVIDO** em
+2026-10-19. **O próximo item da ordem acordada é o C-8** (frontend sem headers de segurança).
 
 ## C-5: `POST /api/contact` aceita entrada sem limite nem formato — RESOLVIDO (2026-08-26)
 Os `[Required]` de `Models/ContactMessage.cs:7-12` são decorativos: Minimal API do .NET 9 não
@@ -75,9 +75,13 @@ Duas coisas que **não** foram fechadas junto, de propósito: o rate limit do lo
 partição única (`Auth/LoginRateLimitPolicy.cs`), e não há `Retry-After` na resposta 429 — o fixed
 window não emite a metadata. Ambas em Ideias Adiadas.
 
-## C-7: Container roda como root — MÉDIO
+## C-7: Container roda como root — RESOLVIDO (2026-10-19)
 `PortfolioApi/Dockerfile:8-13` não define `USER $APP_UID`. A imagem final também carrega
 `iproute2`, ferramenta de diagnóstico de rede sem uso em runtime.
+
+**Resolução** (`e3ef82d`, tarefa rápida 001): a imagem roda como `app` (UID 1654) via
+`USER $APP_UID`. O `apt-get` de `netbase` e `iproute2` saiu: os dois serviam ao Npgsql, que
+saiu no AD-001. Verificado com o container lendo e escrevendo no emulador do Firestore.
 
 ## C-8: Frontend sem headers de segurança — MÉDIO
 `frontend/next.config.ts` está vazio e a Vercel não injeta nada por padrão: sem CSP, sem
