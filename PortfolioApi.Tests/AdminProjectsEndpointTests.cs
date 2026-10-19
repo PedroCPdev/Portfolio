@@ -145,6 +145,18 @@ public class AdminProjectsEndpointTests : IClassFixture<FirestoreFixture>
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/projects/id-que-nao-existe")).StatusCode);
     }
 
+    // C-13: o %2F chega ao handler já decodificado como "a/b"
+    [Fact]
+    public async Task Get_com_barra_codificada_no_id_devolve_404()
+    {
+        using var api = NovaApi();
+        var client = api.CreateClient();
+
+        var resposta = await client.GetAsync("/api/projects/a%2Fb");
+
+        Assert.Equal(HttpStatusCode.NotFound, resposta.StatusCode);
+    }
+
     // ADM-09 (sucesso)
     [Fact]
     public async Task Delete_autenticado_remove_e_o_get_seguinte_da_404()

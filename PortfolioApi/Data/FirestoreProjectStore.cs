@@ -27,10 +27,10 @@ public class FirestoreProjectStore(FirestoreDb db, IOptions<FirestoreOptions> op
         return snapshot.Documents.Select(doc => doc.ConvertTo<Project>()).ToList();
     }
 
-    /// <summary>Retorna null quando o documento não existe — não lança.</summary>
+    /// <summary>Retorna null quando o documento não existe ou o id não é válido — não lança.</summary>
     public async Task<Project?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(id)) return null;
+        if (!IdValido(id)) return null;
 
         var snapshot = await Projects.Document(id).GetSnapshotAsync(cancellationToken);
         return snapshot.Exists ? snapshot.ConvertTo<Project>() : null;
@@ -93,7 +93,8 @@ public class FirestoreProjectStore(FirestoreDb db, IOptions<FirestoreOptions> op
 
     /// <summary>
     /// <c>Document("a/b")</c> lança <c>ArgumentException</c> (verificado, F5) — um id com barra
-    /// vindo da rota viraria 500. Aqui ele é apenas um id que não existe.
+    /// vindo da rota viraria 500. Com número par de barras ("a/b/c") ele não lança, mas lê um
+    /// documento de subcoleção fora da lista de projetos. Aqui os dois são um id que não existe.
     /// </summary>
     private static bool IdValido(string id) =>
         !string.IsNullOrWhiteSpace(id) && !id.Contains('/');

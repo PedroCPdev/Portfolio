@@ -81,6 +81,16 @@ public class FirestoreProjectStoreTests : IClassFixture<FirestoreFixture>
         Assert.Null(await store.GetByIdAsync(id));
     }
 
+    // C-13: Document("a/b") lança ArgumentException; na leitura isso virava 500 em vez de 404
+    [Theory]
+    [InlineData("a/b")]
+    [InlineData("a/b/c")]
+    public async Task GetByIdAsync_com_barra_no_id_retorna_null_sem_lancar(string id)
+    {
+        var store = _fixture.NewStore(out _);
+        Assert.Null(await store.GetByIdAsync(id));
+    }
+
     // FS-05: DateTime não-UTC é normalizado em vez de estourar ArgumentException
     [Fact]
     public async Task AddAsync_aceita_createdAt_nao_utc_normalizando_para_utc()
