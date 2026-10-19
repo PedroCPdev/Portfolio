@@ -14,6 +14,7 @@ gcp-credentials*.json
 
 # Emulador Firestore (verify full)
 firestore-debug.log
+firebase-debug.log
 
 # pedro-harness
 .claude/settings.local.json
