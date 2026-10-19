@@ -194,6 +194,17 @@ Memória persistente do projeto.
 - **Impacto:** revoga o mecanismo do AD-005 e mantém a janela e a conta de horas dele. Decidido
   pelo usuário em 2026-10-19.
 
+### AD-017: CSP com `'unsafe-inline'` em `script-src`, sem nonce
+- **Decisão:** a CSP do frontend libera script inline e restringe o resto (`frame-ancestors 'none'`,
+  `connect-src` só para a própria origem e a API, `object-src 'none'`).
+- **Razão:** o App Router hidrata com script inline. A alternativa é nonce por requisição, que
+  obriga render dinâmico em toda página: a home perderia o ISR de 60s, e cada visita viraria
+  uma chamada ao Render, que dorme.
+- **Trade-off:** a CSP não barra XSS por script inline injetado. O site não renderiza HTML de
+  terceiros nem usa `dangerouslySetInnerHTML`, então a superfície é pequena.
+- **Impacto:** a barra de feedback da Vercel (vercel.live) fica bloqueada nos previews. Decidido
+  em 2026-10-19 durante o C-8.
+
 ## Bloqueios (B-NNN)
 
 ### B-002: Service account do Firebase dentro do repositório — RESOLVIDO
@@ -334,6 +345,12 @@ simplesmente permanece o da conexão.
 | #   | Descrição | Data | Commit | Status |
 | --- | --- | --- | --- | --- |
 | 001 | Container da API roda sem root (C-7) | 2026-10-19 | `e3ef82d` | ✅ Feito |
+| 002 | next 16.4.2 + npm audit fix (3 RCE críticos em produção) | 2026-10-19 | `a1fdbac` | ✅ Feito |
+| 003 | vitest 5.0.5 (2 críticos em dev) | 2026-10-19 | `3818349` | ✅ Feito |
+| 004 | Firestore 4.5.0 e Scalar 2.18.0 | 2026-10-19 | `89558b0` | ✅ Feito |
+| 005 | C-11: e-mail fora do log, config morta, permissions, Dependabot, audit no CI | 2026-10-19 | `d420813`, `ed4998c` | ✅ Feito |
+| 006 | C-13: id com barra no GET devolve 404 | 2026-10-19 | `7d213c7` | ✅ Feito |
+| 007 | C-8: headers de segurança no frontend | 2026-10-19 | `b039f3a` | ✅ Feito |
 
 ## Ideias Adiadas
 

@@ -44,7 +44,8 @@ padrão, sem `dangerouslySetInnerHTML`, com `rel="noopener noreferrer"` em todo 
 
 **Item 2 (C-5, validação de entrada no contato) foi RESOLVIDO** em 2026-08-26 — ver o próprio
 C-5 abaixo. **Item 3 (C-6) foi RESOLVIDO** em 2026-08-26. **Item 4 (C-7) foi RESOLVIDO** em
-2026-10-19. **O próximo item da ordem acordada é o C-8** (frontend sem headers de segurança).
+2026-10-19. C-8, C-13 e quase todo o C-11 também, no mesmo dia. **Abertos: C-9, C-10, o
+`AllowedHosts` do C-11 e o C-12** (console).
 
 ## C-5: `POST /api/contact` aceita entrada sem limite nem formato — RESOLVIDO (2026-08-26)
 Os `[Required]` de `Models/ContactMessage.cs:7-12` são decorativos: Minimal API do .NET 9 não
@@ -83,10 +84,15 @@ window não emite a metadata. Ambas em Ideias Adiadas.
 `USER $APP_UID`. O `apt-get` de `netbase` e `iproute2` saiu: os dois serviam ao Npgsql, que
 saiu no AD-001. Verificado com o container lendo e escrevendo no emulador do Firestore.
 
-## C-8: Frontend sem headers de segurança — MÉDIO
+## C-8: Frontend sem headers de segurança — RESOLVIDO (2026-10-19)
 `frontend/next.config.ts` está vazio e a Vercel não injeta nada por padrão: sem CSP, sem
 `X-Frame-Options`/`frame-ancestors` (o site é clickjackável), sem `X-Content-Type-Options`,
 sem `Referrer-Policy`.
+
+**Resolução** (`b039f3a`): `next.config.ts` envia CSP, `X-Frame-Options: DENY`, `nosniff`,
+`Referrer-Policy` e `Permissions-Policy` em todas as rotas, guardados por
+`security-headers.test.ts`. `script-src` mantém `'unsafe-inline'` (AD-017). Verificado no
+Chromium: `/`, `/admin` e `/projects/x` hidratam sem violação.
 
 ## C-9: Envio de e-mail degrada em silêncio — MÉDIO
 `Services/EmailService.cs:25-31`: sem `Email:ApiKey` configurada, a API loga um warning e
@@ -99,7 +105,7 @@ Não há honeypot nem captcha. A única barreira é o rate limit do C-6 — que 
 paga a disponibilidade de todos pela proteção, mas continua sem impedir robô educado: 3 mensagens
 por minuto por IP são mais que suficientes para saturar a cota do Resend (100 e-mails/dia).
 
-## C-11: Achados de baixa severidade — BAIXO
+## C-11: Achados de baixa severidade — PARCIAL (2026-10-19)
 - `PortfolioApi/appsettings.Development.json:10-11` versiona uma connection string de Postgres
   com senha. Config **morta** desde AD-001 — o Postgres não existe mais no projeto.
 - `appsettings.Development.json:8` — `AllowedHosts: "*"`, sem validação de Host header.
@@ -108,6 +114,12 @@ por minuto por IP são mais que suficientes para saturar a cota do Resend (100 e
   `GITHUB_TOKEN` recebe as permissões default. O job só faz um `curl`; `permissions: {}` basta.
 - Sem Dependabot e sem `npm audit`/`dotnet list --vulnerable` no CI — foi exatamente por isso
   que os CVEs do item 1 passaram despercebidos até a auditoria manual.
+
+**Resolvidos em 2026-10-19:** connection string morta e e-mail no log (`d420813`); `permissions:`
+nos dois workflows, Dependabot e `scripts/audit.mjs` no CI (`ed4998c`). **Aberto:** `AllowedHosts`
+continua `*`; a correção é a env var `AllowedHosts` no Render com o host do serviço, fora do
+repositório. **Aceito:** 5 avisos altos de `braces` em dev (via `eslint-config-next`), sem versão
+corrigida publicada (faixa `<=3.0.3`); só roda no lint, com padrões de glob do próprio repo.
 
 ## C-12: Verificações fora do repositório — INDETERMINADO
 Não são verificáveis a partir do código; exigem o console e ficam com o usuário:
@@ -118,7 +130,7 @@ Não são verificáveis a partir do código; exigem o console e ficam com o usu�
 - **Chave do Resend:** restrita a envio e rotacionada se já circulou fora do gerenciador de
   segredos (a auditoria não a encontrou no histórico do git).
 
-## C-13: `GET /api/projects/{id}` responde 500 para id com barra — BAIXO
+## C-13: `GET /api/projects/{id}` responde 500 para id com barra — RESOLVIDO (2026-10-19)
 `Data/FirestoreProjectStore.cs:30` chama `Projects.Document(id)` sem validar o id.
 `Document("a/b")` lança `ArgumentException: Path must have an odd number of elements`
 (verificado no emulador, evidência da feature `admin-panel`), e um `%2F` na URL chega ao handler
@@ -132,3 +144,6 @@ já tratam id inválido como inexistente desde 2026-08-24; a correção do `GET`
 por disciplina de escopo — a tarefa era o painel admin, não o endpoint de leitura. A correção é
 mover a guarda `IdValido` (`FirestoreProjectStore.cs:97`) para `GetByIdAsync`, com um teste que
 hoje ficaria vermelho.
+
+**Resolução** (`7d213c7`): `GetByIdAsync` usa a guarda `IdValido`. Achado no caminho: id com duas
+barras (`a/b/c`) não lançava, lia um documento de subcoleção. 3 testes novos.
