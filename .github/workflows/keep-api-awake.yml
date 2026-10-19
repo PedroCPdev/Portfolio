@@ -1,24 +1,13 @@
-# Mantém a API do Render acordada durante a janela de maior tráfego.
+# Ping manual em /health, para acordar a API do Render na hora.
 #
-# POR QUE NÃO 24/7:
-#   O free tier do Render dá 750 instance-hours por mês, por workspace, e um serviço
-#   dormindo não consome hora nenhuma. Um mês de 31 dias tem 744 horas — pingar 24/7
-#   deixaria só 6h de margem, e estourar a cota faz o Render SUSPENDER todos os serviços
-#   free até o mês seguinte. Isso trocaria uma falha intermitente por uma falha total.
-#
-#   A janela abaixo cobre 16h/dia (~496 h/mês), com folga confortável.
-#   Fora dela o serviço dorme e o frontend absorve o cold start com retry
-#   (ver frontend/src/lib/api.ts).
-#
-# ÚNICO PONTO DE EDIÇÃO DA JANELA: a linha `- cron:` logo abaixo.
-#   Horas em UTC. O padrão 0-2,11-23 equivale a 08:00–00:00 no horário de Brasília (UTC-3).
-#   Ampliar a janela aumenta o consumo: cada hora/dia a mais soma ~31 h/mês.
+# O ping agendado mora no cron-job.org desde 2026-10-19 (AD-016): a cada 10 min, das 08:00 às
+# 23:50 em America/Sao_Paulo. O `schedule:` saiu daqui porque o GitHub rodava de 3 a 7 das 96
+# execuções diárias e desliga workflows agendados após 60 dias sem atividade no repositório.
+# A janela de 16h/dia continua valendo pelo motivo do AD-005: 750 instance-hours/mês no free tier.
 
 name: keep-api-awake
 
 on:
-  schedule:
-    - cron: "*/10 0-2,11-23 * * *"
   workflow_dispatch: {}
 
 jobs:

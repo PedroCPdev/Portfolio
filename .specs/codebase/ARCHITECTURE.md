@@ -13,7 +13,7 @@ Visitante → Vercel (Next.js server component)
                         │                              429 no excedente, corpo ≤ 32 KB)
                         └─ GET  /health             → responde sem tocar no Firestore
                                                       ↑
-GitHub Actions (keep-api-awake, a cada 10 min das 08:00 às 00:00 BRT) ──────┘
+cron-job.org (a cada 10 min das 08:00 às 23:50 BRT, AD-016) ────────────────┘
 
 Admin (browser) → Vercel /admin  (client component, sem ISR, sessionStorage)
               └─ lib/admin.ts  fetch cache: "no-store", Authorization: Bearer
@@ -64,7 +64,7 @@ com ela sai a causa raiz do crash de startup quando o banco estava pausado.
 ## Resiliência ao cold start
 O free tier do Render desliga a instância após ~15 min sem tráfego e leva ~1 min para religar.
 Duas camadas independentes tratam isso, nenhuma delas no caminho do banco:
-1. **Keep-alive** — GitHub Actions pinga `/health` a cada 10 min numa janela de 16h/dia.
+1. **Keep-alive** — o cron-job.org pinga `/health` a cada 10 min numa janela de 16h/dia (AD-016).
    Mecanismo detalhado em `INTEGRATIONS.md`; razão da janela em AD-005.
 2. **Retry no frontend** — `getProjects()` (`frontend/src/lib/api.ts:17-42`) tenta 3 vezes com
    timeout de 15s e backoff de 3s e 6s, cobrindo ~54s. Erro HTTP 4xx/5xx **não** é repetido
@@ -110,4 +110,4 @@ Firestore credentials come from `Firestore:CredentialsJson` (the whole service a
 falls back to Application Default Credentials. `EmulatorDetection.EmulatorOrProduction` is set, so
 `FIRESTORE_EMULATOR_HOST` routes to a local emulator when present.
 
-`.github/workflows/keep-api-awake.yml` pings `/health` every 10 minutes between 08:00 and 00:00 BRT to keep the Render instance awake, and needs a `RENDER_API_URL` repository variable. The window is deliberately not 24/7: Render grants 750 instance-hours/month and exceeding it suspends every free service until the next month. See `.specs/codebase/INTEGRATIONS.md`.
+A cron-job.org job pings `/health` every 10 minutes between 08:00 and 23:50 BRT to keep the Render instance awake (AD-016); `.github/workflows/keep-api-awake.yml` remains only as a manual ping. The window is deliberately not 24/7: Render grants 750 instance-hours/month and exceeding it suspends every free service until the next month. See `.specs/codebase/INTEGRATIONS.md`.

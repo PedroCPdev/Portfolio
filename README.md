@@ -34,7 +34,7 @@ Portfolio/
 │   ├── Models/
 │   └── Services/           # DataSeeder, EmailService
 ├── PortfolioApi.Tests/     # xUnit, runs against the Firestore emulator
-└── .github/workflows/      # keep-api-awake (pings the API so it does not sleep)
+└── .github/workflows/      # verify (CI gate) and keep-api-awake (manual ping)
 ```
 
 ---
@@ -143,10 +143,10 @@ Integration tests fail loudly when the emulator is not running — they are neve
 |---|---|---|
 | Vercel | `frontend/` | `NEXT_PUBLIC_API_URL` pointing at the Render URL |
 | Render | `PortfolioApi/` via `Dockerfile` | `AllowedOrigins`, `Firestore__ProjectId`, `Firestore__CredentialsJson`, `Email__ApiKey`, `Email__FromAddress`, `Email__ToAddress` |
-| GitHub Actions | `keep-api-awake.yml` | repository variable `RENDER_API_URL` |
+| cron-job.org | `GET /health` every 10 min, 08:00 to 23:50 `America/Sao_Paulo` | job in the cron-job.org account |
 
 Render's free tier sleeps after ~15 min idle and takes ~1 min to wake. Two layers absorb that:
-the workflow pings `/health` every 10 minutes between 08:00 and 00:00 BRT, and `getProjects()`
+a cron-job.org job pings `/health` every 10 minutes between 08:00 and 23:50 BRT, and `getProjects()`
 retries for ~54s before falling back to an empty list. The window is not 24/7 on purpose —
 Render grants 750 instance-hours/month, and going over suspends every free service until the
 next month.
