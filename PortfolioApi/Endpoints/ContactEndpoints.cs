@@ -32,7 +32,7 @@ public static class ContactEndpoints
         // política de endpoint — ver RateLimiting/ContactRateLimiter.cs e o design D-2.
         app.MapPost(Rota, async (ContactMessage message, EmailService emailService, ILogger<Program> logger) =>
             {
-                logger.LogInformation("[Contact] From: {Name} <{Email}>", message.Name, message.Email);
+                logger.LogInformation("[Contact] Mensagem recebida ({Length} caracteres)", message.Message.Length);
 
                 try
                 {
@@ -40,7 +40,7 @@ public static class ContactEndpoints
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Failed to send contact email from {Email}", message.Email);
+                    logger.LogError(ex, "Failed to send contact email");
                     return Results.Json(
                         new { success = false, error = "Failed to send message. Try again later." },
                         statusCode: StatusCodes.Status502BadGateway);
