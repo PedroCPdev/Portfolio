@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getProjects } from "../api";
+import { getProjects, sendContactMessage } from "../api";
 
 const okProject = {
   id: "abc123",
@@ -92,5 +92,37 @@ describe("getProjects", () => {
     const result = await resolveWithTimers(getProjects());
 
     expect(result).toEqual([]);
+  });
+});
+
+describe("sendContactMessage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const payload = { name: "Visitante", email: "visitante@exemplo.dev", message: "Olá" };
+
+  function resposta(status: number, body: unknown) {
+    return { ok: status < 400, status, json: async () => body } as Response;
+  }
+
+  // Desde o C-6 o rate limit responde 429 sem corpo; antes era 503.
+  it("429 vira o aviso de excesso de mensagens", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(resposta(429, null));
+    expect(await sendContactMessage(payload)).toEqual({
+      success: false,
+      error: "Too many messages sent. Try again in a minute.",
+    });
+  });
+
+  // C-9: 503 passou a significar "e-mail não configurado", e a API manda o texto para a tela.
+  it("503 mostra o erro que a API mandou", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      resposta(503, { success: false, error: "Contact form is unavailable right now." }),
+    );
+    expect(await sendContactMessage(payload)).toEqual({
+      success: false,
+      error: "Contact form is unavailable right now.",
+    });
   });
 });

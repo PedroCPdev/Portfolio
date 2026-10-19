@@ -134,6 +134,23 @@ public class ContactEndpointTests
         Assert.Equal(32 * 1024, contato.Metadata.GetMetadata<IRequestSizeLimitMetadata>()?.MaxRequestBodySize);
     }
 
+    // C-9 (falha): sem a seção Email a API respondia 200 e a mensagem sumia. Agora o visitante
+    // recebe 503 com um texto que a tela mostra, e nada sai para o Resend.
+    [Fact]
+    public async Task Sem_email_configurado_devolve_503_com_erro_e_nao_chama_o_resend()
+    {
+        var espiao = new ResendSpy();
+        using var api = new ContactApiFactory(espiao, emailConfigurado: false);
+
+        var resposta = await api.CreateClient().PostAsync("/api/contact", Json(Mensagem()));
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, resposta.StatusCode);
+        var corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(corpo.GetProperty("success").GetBoolean());
+        Assert.False(string.IsNullOrWhiteSpace(corpo.GetProperty("error").GetString()));
+        Assert.Equal(0, espiao.Chamadas);
+    }
+
     // CT-05 (sucesso): o caminho válido segue igual ao de antes — e agora dá para provar que
     // ele de fato chega ao Resend, com o conteúdo do formulário.
     [Fact]

@@ -88,7 +88,8 @@ export async function sendContactMessage(payload: ContactPayload): Promise<Conta
       signal: AbortSignal.timeout(30000),
     });
 
-    if (res.status === 503) {
+    // O rate limit do C-6 responde 429 sem corpo, então o texto mora aqui.
+    if (res.status === 429) {
       return { success: false, error: "Too many messages sent. Try again in a minute." };
     }
 

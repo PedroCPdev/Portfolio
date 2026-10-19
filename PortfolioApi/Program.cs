@@ -71,6 +71,14 @@ builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<EmailService>();
 
+var emailOptions = builder.Configuration.GetSection("Email").Get<EmailOptions>() ?? new EmailOptions();
+if (!emailOptions.IsConfigured)
+{
+    Console.WriteLine(
+        "[Email] Formulário de contato DESLIGADO: Email__ApiKey e/ou Email__ToAddress ausentes. " +
+        "POST /api/contact responde 503.");
+}
+
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection("Admin"));
 builder.Services.AddSingleton<AdminTokenService>();
 

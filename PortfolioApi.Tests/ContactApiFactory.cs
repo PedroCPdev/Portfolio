@@ -15,11 +15,16 @@ namespace Portfolio.Tests;
 /// <c>ContactRateLimitTests</c> (rate limit) sobem a mesma aplicação, e duplicar a fábrica
 /// deixaria duas configurações de teste divergindo em silêncio.
 /// </summary>
-public class ContactApiFactory(ResendSpy espiao) : AdminApiFactory(extras: new Dictionary<string, string?>
-{
-    ["Email:ApiKey"] = "chave-de-teste-do-gate",
-    ["Email:ToAddress"] = "destino@teste.dev",
-})
+/// <c>emailConfigurado: false</c> sobe a aplicação sem a seção <c>Email</c>, como produção ficaria
+/// se a env var sumisse (C-9).
+public class ContactApiFactory(ResendSpy espiao, bool emailConfigurado = true) : AdminApiFactory(
+    extras: emailConfigurado
+        ? new Dictionary<string, string?>
+        {
+            ["Email:ApiKey"] = "chave-de-teste-do-gate",
+            ["Email:ToAddress"] = "destino@teste.dev",
+        }
+        : new Dictionary<string, string?>())
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

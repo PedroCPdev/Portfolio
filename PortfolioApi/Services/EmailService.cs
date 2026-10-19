@@ -10,25 +10,24 @@ public class EmailOptions
     public string ApiKey { get; set; } = string.Empty;
     public string FromAddress { get; set; } = "onboarding@resend.dev";
     public string ToAddress { get; set; } = string.Empty;
+
+    public bool IsConfigured =>
+        !string.IsNullOrWhiteSpace(ApiKey) &&
+        !string.IsNullOrWhiteSpace(ToAddress);
 }
 
-public class EmailService(IOptions<EmailOptions> options, IHttpClientFactory httpClientFactory, ILogger<EmailService> logger)
+public class EmailService(IOptions<EmailOptions> options, IHttpClientFactory httpClientFactory)
 {
     private readonly EmailOptions _options = options.Value;
 
-    public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(_options.ApiKey) &&
-        !string.IsNullOrWhiteSpace(_options.ToAddress);
+    public bool IsConfigured => _options.IsConfigured;
 
     public async Task SendContactMessageAsync(ContactMessage message)
     {
+        // O endpoint checa IsConfigured antes e responde 503 (C-9). Chegar aqui sem config é bug de
+        // quem chama: lançar evita a volta do sucesso falso, em que a mensagem sumia.
         if (!IsConfigured)
-        {
-            logger.LogWarning(
-                "Email section not configured; contact message from {Email} was logged but not emailed",
-                message.Email);
-            return;
-        }
+            throw new InvalidOperationException("Email section not configured; nothing was sent.");
 
         var client = httpClientFactory.CreateClient();
         client.BaseAddress = new Uri("https://api.resend.com/");

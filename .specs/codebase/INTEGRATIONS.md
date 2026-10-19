@@ -3,7 +3,7 @@
 | Integração | Onde | Config | Observação |
 |---|---|---|---|
 | Cloud Firestore | `Data/FirestoreProjectStore.cs`, `Program.cs` | `Firestore:ProjectId`, `Firestore:CredentialsJson` | Free tier Spark **não pausa** por inatividade (motivo da migração) |
-| Resend (e-mail) | `Services/EmailService.cs` | seção `Email` (`ApiKey`, `FromAddress`, `ToAddress`) | POST `https://api.resend.com/emails`; degrada silenciosamente se não configurado |
+| Resend (e-mail) | `Services/EmailService.cs` | seção `Email` (`ApiKey`, `FromAddress`, `ToAddress`) | POST `https://api.resend.com/emails`; sem configuração o contato responde 503 (C-9)|
 | Vercel | hospeda `frontend/` | `NEXT_PUBLIC_API_URL` | pedrocpdev.vercel.app |
 | Render | hospeda `PortfolioApi/` (Docker) | `AllowedOrigins`, `Firestore__*`, `Email__*` | **free tier dorme ~15min** → cold start ~50s (ver C-1) |
 | cron-job.org | job "Keep Portfolio up" na conta do Pedro | URL `https://portfolioapi-p03p.onrender.com/health` | keep-alive da API; ver abaixo |

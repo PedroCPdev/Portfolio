@@ -34,6 +34,16 @@ public static class ContactEndpoints
             {
                 logger.LogInformation("[Contact] Mensagem recebida ({Length} caracteres)", message.Message.Length);
 
+                // Sem a seção Email a API respondia sucesso e a mensagem sumia (C-9). O 503 leva o
+                // visitante para os outros contatos da página.
+                if (!emailService.IsConfigured)
+                {
+                    logger.LogError("[Contact] Email não configurado: mensagem recusada com 503");
+                    return Results.Json(
+                        new { success = false, error = "The contact form is unavailable right now. Reach me on GitHub or LinkedIn." },
+                        statusCode: StatusCodes.Status503ServiceUnavailable);
+                }
+
                 try
                 {
                     await emailService.SendContactMessageAsync(message);
