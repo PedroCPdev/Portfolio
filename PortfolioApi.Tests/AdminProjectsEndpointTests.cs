@@ -19,6 +19,7 @@ namespace Portfolio.Tests;
 /// numa coleção exclusiva deste teste. Depende do <see cref="FirestoreFixture"/> só para falhar
 /// alto quando o emulador não está no ar.
 /// </summary>
+[Trait("Category", "Firestore")]
 public class AdminProjectsEndpointTests : IClassFixture<FirestoreFixture>
 {
     public AdminProjectsEndpointTests(FirestoreFixture fixture) => _ = fixture;

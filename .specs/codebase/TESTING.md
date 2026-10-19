@@ -6,11 +6,16 @@
 
 ## Comandos de gate
 
-| Gate | Comando | Cobre |
+Desde 2026-10-19 o gate é `node scripts/verify.mjs <nível>`, o mesmo comando dos hooks e do CI.
+
+| Gate | Comandos | Cobre |
 |---|---|---|
-| `build` | `cd PortfolioApi && dotnet build` | compila a API |
-| `quick` | `cd PortfolioApi.Tests && dotnet test` | unit + integração (exige emulador) |
-| `full` | `quick` + `cd frontend && npm test && npm run build && npm run lint` | tudo (**182 testes: 94 na API, 88 no frontend**, medido em 2026-08-26) |
+| `quick` | lint, `tsc --noEmit`, vitest, `dotnet test --filter Category!=Firestore` | 88 testes do frontend + 60 da API, ~30s |
+| `full` | `quick` + `firebase emulators:exec` rodando `dotnet test --filter Category=Firestore` | + 34 testes de integração; sobe e derruba o emulador sozinho |
+| `build` | `full` + `next build` + `dotnet build PortfolioApi -c Release` | tudo (**182 testes: 94 na API, 88 no frontend**, medido em 2026-10-19) |
+
+Classe que usa `FirestoreFixture` precisa de `[Trait("Category", "Firestore")]`; sem ele, entra no `quick` e falha sem emulador.
+O `verify.mjs` define `DOTNET_ROLL_FORWARD=Major`: numa máquina só com o runtime .NET 10, o testhost do net9.0 roda nele.
 
 ## Emulador Firestore (obrigatório para os testes de integração)
 

@@ -11,3 +11,15 @@ obj/
 *serviceAccount*.json
 *service-account*.json
 gcp-credentials*.json
+
+# Emulador Firestore (verify full)
+firestore-debug.log
+
+# pedro-harness
+.claude/settings.local.json
+.claude/.harness-state.json
+.specs/**/evidencias/*.png
+.specs/**/evidencias/*.jpg
+.env
+.env.*
+!.env.example

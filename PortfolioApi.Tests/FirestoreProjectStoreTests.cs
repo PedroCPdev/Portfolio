@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Portfolio.Tests;
 
+[Trait("Category", "Firestore")]
 public class FirestoreProjectStoreTests : IClassFixture<FirestoreFixture>
 {
     private readonly FirestoreFixture _fixture;
