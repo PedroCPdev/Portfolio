@@ -179,6 +179,21 @@ Memória persistente do projeto.
 - **Impacto:** revoga a premissa da D-10 do `admin-panel` (particionar por `X-Forwarded-For` é
   falso isolamento) — vale para o endereço à esquerda, não para o à direita. O login **não** mudou.
 
+### AD-016: keep-alive sai do GitHub Actions para um cron externo (cron-job.org)
+- **Decisão:** o ping em `/health` passa a ser feito pelo cron-job.org, a cada 10 min das 08:00
+  às 23:50 em `America/Sao_Paulo`. O `schedule:` do `keep-api-awake.yml` sai depois que o cron
+  externo estiver confirmado; o `workflow_dispatch` fica para ping manual.
+- **Razão:** medido em 2026-10-19: entre 12 e 19/10 o workflow rodou de 3 a 7 vezes por dia,
+  contra 96 esperadas. O GitHub descarta execuções de `schedule` sob carga, e o Render dorme
+  após 15 min sem tráfego, então a API passava quase o dia todo dormindo. O GitHub também
+  desliga workflows agendados após 60 dias sem atividade no repositório (aviso recebido por
+  e-mail em 2026-10; o último push tinha sido em 2026-08-27).
+- **Trade-off:** a janela passa a morar fora do repositório, numa conta do cron-job.org. Com o
+  ping cumprindo o horário, o consumo real chega aos ~496 h/mês previstos no AD-005; antes era
+  bem menor porque quase nenhum ping chegava.
+- **Impacto:** revoga o mecanismo do AD-005 e mantém a janela e a conta de horas dele. Decidido
+  pelo usuário em 2026-10-19.
+
 ## Bloqueios (B-NNN)
 
 ### B-002: Service account do Firebase dentro do repositório — RESOLVIDO
