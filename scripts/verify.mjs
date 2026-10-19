@@ -39,10 +39,6 @@ const COMMANDS = {
   ],
 };
 
-// O projeto mira net9.0. Sem o runtime 9 instalado, o testhost roda no runtime mais novo (Major só
-// sobe de versão quando a pedida falta). O CI instala o 9, então lá roda no runtime certo.
-process.env.DOTNET_ROLL_FORWARD ??= 'Major';
-
 // ─── daqui para baixo não precisa mexer ───────────────────────────────────────
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';

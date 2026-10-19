@@ -8,7 +8,7 @@
 ## Stack
 
 - `frontend/`: Next.js 16 + React 19 + TypeScript 5 + Tailwind v4
-- `PortfolioApi/`: ASP.NET Core 9 Minimal API + Google.Cloud.Firestore 4.4.0 + Scalar
+- `PortfolioApi/`: ASP.NET Core 10 Minimal API + Google.Cloud.Firestore 4.4.0 + Scalar
 - Sem monorepo: cada sub-projeto tem toolchain própria, sem package.json ou solution na raiz.
 - **Skills de stack:** nenhuma ainda
 

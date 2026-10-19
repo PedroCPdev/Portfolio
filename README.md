@@ -11,7 +11,7 @@ Personal portfolio with a **Next.js** frontend and a **C# REST API** backed by C
 | Layer | Tech |
 |---|---|
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS v4 |
-| API | ASP.NET Core 9 (Minimal API) |
+| API | ASP.NET Core 10 (Minimal API) |
 | Database | Cloud Firestore (NoSQL, schemaless — no migrations) |
 | Email | Resend |
 | Docs | Scalar (OpenAPI) |

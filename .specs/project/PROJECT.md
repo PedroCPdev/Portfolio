@@ -6,12 +6,12 @@ server-side; API ASP.NET Core Minimal expõe os dados e recebe mensagens de cont
 
 ## Objetivos
 - Vitrine pública de projetos, sempre disponível, custo zero de hospedagem
-- A própria API em C# é peça de portfólio — demonstra ASP.NET Core 9 idiomático
+- A própria API em C# é peça de portfólio — demonstra ASP.NET Core 10 idiomático
 - Formulário de contato entregando e-mail de verdade (Resend)
 
 ## Stack
-- Linguagem(ns): TypeScript (frontend), C# / .NET 9 (API)
-- Framework(s): Next.js 16 + React 19 + Tailwind v4; ASP.NET Core 9 Minimal API, Scalar (OpenAPI)
+- Linguagem(ns): TypeScript (frontend), C# / .NET 10 (API)
+- Framework(s): Next.js 16 + React 19 + Tailwind v4; ASP.NET Core 10 Minimal API, Scalar (OpenAPI)
 - Banco de dados: Cloud Firestore (NoSQL) — migrado de PostgreSQL/Supabase em 2026-08-18 (ver AD-001)
 - Infraestrutura/deploy: frontend na Vercel (pedrocpdev.vercel.app); API em Docker no Render (free tier)
 

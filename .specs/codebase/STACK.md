@@ -6,8 +6,8 @@
 - Ícones: react-icons 5.6, lucide-react 1.18
 
 ## PortfolioApi/
-- .NET 9 (`global.json` fixa SDK 9.0.0, `rollForward: latestMinor`). RootNamespace `Portfolio`.
-- ASP.NET Core 9 Minimal API, `Nullable` e `ImplicitUsings` habilitados
+- .NET 10 LTS desde 2026-10-19 (`global.json` fixa SDK 10.0.100, `rollForward: latestMinor`). RootNamespace `Portfolio`.
+- ASP.NET Core 10 Minimal API, `Nullable` e `ImplicitUsings` habilitados
 - Scalar.AspNetCore 2.16.2 (docs OpenAPI, só em Development)
 - **Persistência: Google.Cloud.Firestore 4.4.0** (desde 2026-08-18; antes EF Core 9 + Npgsql)
 - Gerenciador: NuGet.

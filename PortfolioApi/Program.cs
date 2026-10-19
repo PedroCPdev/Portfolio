@@ -105,7 +105,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     // O container do Render só é alcançável pelo proxy deles, e o IP desse proxy não é estável o
     // bastante para virar lista mantida à mão.
     options.KnownProxies.Clear();
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
 });
 
 builder.Services.AddRateLimiter(options =>

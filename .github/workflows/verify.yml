@@ -18,10 +18,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # A API mira net9.0; o emulador do Firestore (firebase-tools) exige JDK 21+.
+      # A API mira net10.0; o emulador do Firestore (firebase-tools) exige JDK 21+.
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.x
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
