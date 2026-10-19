@@ -2,6 +2,15 @@
 
 Memória persistente do projeto.
 
+## Última Atualização
+
+2026-10-19. Sessão pausada com a árvore limpa e `main` igual a `origin/main` (CI verde).
+
+## Trabalho Atual
+
+Nenhuma feature em andamento. O backlog de segurança do repositório fechou em 2026-10-19
+(C-7 a C-13, menos o `AllowedHosts` do C-11). Pendências fora do repositório em `HANDOFF.md`.
+
 ## Decisões (AD-NNN)
 
 ### AD-001: Migrar persistência de PostgreSQL/Supabase para Cloud Firestore

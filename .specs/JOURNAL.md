@@ -5,6 +5,18 @@ Entradas antigas nunca são reescritas nem apagadas.
 
 ---
 
+## 2026-10-19 — pedro-harness, .NET 10, keep-alive externo e backlog de segurança
+
+O repositório ganhou o gate único `scripts/verify.mjs` (format, quick, full, build), o CI
+`verify.yml` e o `AGENTS.md`. A arquitetura do `CLAUDE.md` foi para `ARCHITECTURE.md`. A API
+migrou para .NET 10 LTS. O keep-alive saiu do GitHub Actions, que rodava 3 a 7 das 96 execuções
+diárias, para o cron-job.org (AD-016).
+
+Na sequência fecharam C-7 (container sem root), C-8 (headers, AD-017), C-9 (503 sem e-mail),
+C-10 (honeypot e teto de 50/dia), C-13 (id com barra) e quase todo o C-11 (log sem e-mail,
+Dependabot, audit no CI). O next foi para 16.4.2, fechando 3 RCE críticos. Testes: 96 no
+frontend e 104 na API, todos verdes.
+
 ## 2026-08-27 — Painel admin em produção, e limpeza do zip de rascunho
 
 Os 13 commits da `admin-panel` e os 2 do rate limit de contato saíram da máquina e foram para
