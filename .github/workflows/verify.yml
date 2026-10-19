@@ -5,6 +5,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -32,6 +35,10 @@ jobs:
 
       - name: verify build
         run: node scripts/verify.mjs build --log verify-build.txt
+
+      # Fora do verify porque muda sem commit, quando sai um aviso novo (ver scripts/audit.mjs).
+      - name: Auditar dependências de produção
+        run: node scripts/audit.mjs
 
       - name: Guardar log do verify
         if: always()

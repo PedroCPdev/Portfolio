@@ -1,0 +1,30 @@
+# Abre PR quando uma dependência ganha versão nova ou aviso de segurança (C-11).
+# Atualizações de versão saem uma vez por semana, agrupadas por ecossistema para não virar fila
+# de PR. Avisos de segurança abrem PR na hora, independente do agendamento.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend:
+        patterns: ["*"]
+
+  - package-ecosystem: nuget
+    directories: ["/PortfolioApi", "/PortfolioApi.Tests"]
+    schedule:
+      interval: weekly
+    groups:
+      dotnet:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /PortfolioApi
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

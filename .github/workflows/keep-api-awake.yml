@@ -10,6 +10,9 @@ name: keep-api-awake
 on:
   workflow_dispatch: {}
 
+# O job só faz um curl; o GITHUB_TOKEN não precisa de permissão nenhuma (C-11).
+permissions: {}
+
 jobs:
   ping:
     runs-on: ubuntu-latest
