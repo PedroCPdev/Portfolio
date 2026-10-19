@@ -7,6 +7,11 @@ updates:
     directory: /frontend
     schedule:
       interval: weekly
+    # O TypeScript 7 (compilador em Go) ainda não é suportado pelo typescript-eslint: o lint
+    # quebra com "typescript-eslint does not support TS 7.0" (PR #6, 2026-10-19).
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       frontend:
         patterns: ["*"]
