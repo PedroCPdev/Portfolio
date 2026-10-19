@@ -14,6 +14,7 @@ export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -21,13 +22,14 @@ export default function ContactForm() {
     e.preventDefault();
     setStatus("submitting");
 
-    const result = await sendContactMessage({ name, email, message });
+    const result = await sendContactMessage({ name, email, message, website });
 
     if (result.success) {
       setStatus("success");
       setName("");
       setEmail("");
       setMessage("");
+      setWebsite("");
     } else {
       setStatus("error");
       setErrorMessage(result.error ?? "The message did not go through. Try again.");
@@ -35,7 +37,21 @@ export default function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5">
+    <form onSubmit={handleSubmit} className="relative flex w-full flex-col gap-5">
+      {/* Honeypot (C-10): fora da tela, do teclado e do leitor de tela. Robô que preenche todo
+          campo preenche este, e a API descarta a mensagem respondendo como se tivesse enviado. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <label htmlFor="website">Website</label>
+        <input
+          id="website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
+      </div>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="name" className={labelClass}>

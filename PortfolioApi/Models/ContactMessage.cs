@@ -31,4 +31,10 @@ public class ContactMessage
     [NotBlank(ErrorMessage = "Message cannot be blank.")]
     [StringLength(4000, ErrorMessage = "Message cannot exceed 4000 characters.")]
     public string Message { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Honeypot (C-10). O formulário esconde o campo de pessoas; robô que preenche tudo o
+    /// preenche. Sem validação de propósito: recusar com 400 ensinaria o robô a deixá-lo vazio.
+    /// </summary>
+    public string? Website { get; set; }
 }

@@ -72,6 +72,8 @@ export interface ContactPayload {
   name: string;
   email: string;
   message: string;
+  /** Honeypot (C-10): vazio para pessoas. Preenchido, a API descarta a mensagem. */
+  website?: string;
 }
 
 export interface ContactResult {

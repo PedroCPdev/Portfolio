@@ -16,16 +16,22 @@ namespace Portfolio.Tests;
 /// deixaria duas configurações de teste divergindo em silêncio.
 /// </summary>
 /// <c>emailConfigurado: false</c> sobe a aplicação sem a seção <c>Email</c>, como produção ficaria
-/// se a env var sumisse (C-9).
-public class ContactApiFactory(ResendSpy espiao, bool emailConfigurado = true) : AdminApiFactory(
-    extras: emailConfigurado
-        ? new Dictionary<string, string?>
-        {
-            ["Email:ApiKey"] = "chave-de-teste-do-gate",
-            ["Email:ToAddress"] = "destino@teste.dev",
-        }
-        : new Dictionary<string, string?>())
+/// se a env var sumisse (C-9). <c>limiteDiario</c> troca o teto de e-mails por dia (C-10).
+public class ContactApiFactory(ResendSpy espiao, bool emailConfigurado = true, int? limiteDiario = null)
+    : AdminApiFactory(extras: Config(emailConfigurado, limiteDiario))
 {
+    private static Dictionary<string, string?> Config(bool emailConfigurado, int? limiteDiario)
+    {
+        var config = new Dictionary<string, string?>();
+        if (emailConfigurado)
+        {
+            config["Email:ApiKey"] = "chave-de-teste-do-gate";
+            config["Email:ToAddress"] = "destino@teste.dev";
+        }
+        if (limiteDiario is not null) config["Contact:DailyEmailLimit"] = limiteDiario.ToString();
+        return config;
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         base.ConfigureWebHost(builder);

@@ -30,9 +30,17 @@ public static class ContactEndpoints
         // O rate limit não aparece aqui: desde o C-6 são duas camadas encadeadas (3/min por
         // visitante + 20/min no endpoint), e a ordem de aquisição só é expressável fora da
         // política de endpoint — ver RateLimiting/ContactRateLimiter.cs e o design D-2.
-        app.MapPost(Rota, async (ContactMessage message, EmailService emailService, ILogger<Program> logger) =>
+        app.MapPost(Rota, async (ContactMessage message, EmailService emailService, DailyEmailBudget budget,
+                ILogger<Program> logger) =>
             {
                 logger.LogInformation("[Contact] Mensagem recebida ({Length} caracteres)", message.Message.Length);
+
+                // Honeypot (C-10): o robô recebe o mesmo 200 de um envio e não aprende nada.
+                if (!string.IsNullOrEmpty(message.Website))
+                {
+                    logger.LogInformation("[Contact] Honeypot preenchido: mensagem descartada");
+                    return Results.Ok(new { success = true, message = "Message sent!" });
+                }
 
                 // Sem a seção Email a API respondia sucesso e a mensagem sumia (C-9). O 503 leva o
                 // visitante para os outros contatos da página.
@@ -41,6 +49,15 @@ public static class ContactEndpoints
                     logger.LogError("[Contact] Email não configurado: mensagem recusada com 503");
                     return Results.Json(
                         new { success = false, error = "The contact form is unavailable right now. Reach me on GitHub or LinkedIn." },
+                        statusCode: StatusCodes.Status503ServiceUnavailable);
+                }
+
+                // Por último: só a mensagem que vai de fato para o Resend consome o teto (AS-05).
+                if (!budget.TryConsume())
+                {
+                    logger.LogWarning("[Contact] Teto diário de e-mails atingido: mensagem recusada com 503");
+                    return Results.Json(
+                        new { success = false, error = "The contact form reached today's limit. Reach me on GitHub or LinkedIn." },
                         statusCode: StatusCodes.Status503ServiceUnavailable);
                 }
 

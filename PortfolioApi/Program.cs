@@ -70,6 +70,9 @@ builder.Services.AddSingleton<FirestoreProjectStore>();
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<EmailService>();
+builder.Services.Configure<ContactOptions>(builder.Configuration.GetSection("Contact"));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<DailyEmailBudget>();
 
 var emailOptions = builder.Configuration.GetSection("Email").Get<EmailOptions>() ?? new EmailOptions();
 if (!emailOptions.IsConfigured)
