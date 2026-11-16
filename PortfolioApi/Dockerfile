@@ -5,7 +5,7 @@ RUN dotnet restore "PortfolioApi.csproj"
 COPY . .
 RUN dotnet publish "PortfolioApi.csproj" -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:8080
